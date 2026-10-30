@@ -4,7 +4,7 @@
 //   gem-els CORPUS find WORD BOOK [CH1 V1 CH2 V2] [DMAX]   list occurrences, 2 <= |d| <= DMAX (default 20)
 //   gem-els CORPUS bench [DMAX] [ROUNDS]                   A/B of kernels P, S, R on Genesis targets
 //   gem-els CORPUS rambsel                                 PREREG-004 part A
-//   gem-els CORPUS design [REPS] [KERNEL]                  PREREG-004 part B (KERNEL S or R)
+//   gem-els CORPUS design [REPS] [KERNEL]                  PREREG-004 part B (KERNEL S, R or H)
 #include "gem/els.hpp"
 #include "gem/stats.hpp"
 #include "../stats/rng.hpp"
@@ -18,6 +18,7 @@ extern "C" {
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <map>
 #include <stdexcept>
 #include <thread>
@@ -154,30 +155,34 @@ int cmd_bench(const gem::Corpus &corpus, unsigned dmax, unsigned rounds)
     const gem::Els5 table(targets);
     std::printf("bench: Genesis %zu letters, %zu targets (x2 directions), d = 2..%u, %u interleaved rounds, 1 thread\n",
                 L.size(), targets.size(), dmax, rounds);
-    std::vector<double> tp, ts, tr;
-    gem::ElsCount cp, cs, cr;
-    for (unsigned k = 0; k < rounds; k++) {
-        auto t0 = Clock::now();
-        cp = gem::els_count_plain(L, targets, 2, dmax);
-        tp.push_back(since(t0));
-        t0 = Clock::now();
-        cs = table.count_streams(L, 2, dmax);
-        ts.push_back(since(t0));
-        t0 = Clock::now();
-        cr = table.count_rolling(L, 2, dmax);
-        tr.push_back(since(t0));
-    }
-    auto report = [](const char *name, std::vector<double> t, const gem::ElsCount &x) {
-        std::sort(t.begin(), t.end());
-        std::printf("  %-28s total %8llu  min %8.4f s  median %8.4f s  max %8.4f s\n", name,
-                    static_cast<unsigned long long>(x.total), t.front(), t[t.size() / 2], t.back());
+    struct Kernel {
+        const char *name;
+        std::function<gem::ElsCount()> run;
+        std::vector<double> t;
+        gem::ElsCount count;
     };
-    report("P plain per-word scan", tp, cp);
-    report("S multi-target, 5 streams", ts, cs);
-    report("R multi-target, rolling key", tr, cr);
-    const bool same = cp.total == cs.total && cp.total == cr.total && cp.band[0] == cs.band[0] &&
-                      cp.band[0] == cr.band[0] && cp.band[1] == cs.band[1] && cp.band[1] == cr.band[1] &&
-                      cp.band[2] == cs.band[2] && cp.band[2] == cr.band[2];
+    std::vector<Kernel> kernels = {
+        {"P plain per-word scan", [&] { return gem::els_count_plain(L, targets, 2, dmax); }, {}, {}},
+        {"S multi-target, 5 streams", [&] { return table.count_streams(L, 2, dmax); }, {}, {}},
+        {"R rolling key, 4 MB bitmap", [&] { return table.count_rolling(L, 2, dmax); }, {}, {}},
+        {"H rolling key, 8 KB prefilter", [&] { return table.count_hashed(L, 2, dmax); }, {}, {}},
+    };
+    for (unsigned k = 0; k < rounds; k++)
+        for (Kernel &kern : kernels) {
+            const auto t0 = Clock::now();
+            kern.count = kern.run();
+            kern.t.push_back(since(t0));
+        }
+    bool same = true;
+    for (Kernel &kern : kernels) {
+        std::sort(kern.t.begin(), kern.t.end());
+        std::printf("  %-30s total %8llu  min %8.4f s  median %8.4f s  max %8.4f s\n", kern.name,
+                    static_cast<unsigned long long>(kern.count.total), kern.t.front(), kern.t[kern.t.size() / 2],
+                    kern.t.back());
+        const gem::ElsCount &ref = kernels[0].count;
+        same &= kern.count.total == ref.total && kern.count.band[0] == ref.band[0] &&
+                kern.count.band[1] == ref.band[1] && kern.count.band[2] == ref.band[2];
+    }
     std::printf("  counts identical across kernels: %s\n", same ? "YES" : "NO");
     return same ? 0 : 1;
 }
@@ -285,7 +290,9 @@ int cmd_design(const gem::Corpus &corpus, unsigned reps, char kernel, unsigned t
         const auto targets = book_targets(c, b);
         const gem::Els5 table(targets);
         auto run = [&](const std::vector<uint8_t> &s) {
-            return kernel == 'S' ? table.count_streams(s, 2, 1000) : table.count_rolling(s, 2, 1000);
+            return kernel == 'S'   ? table.count_streams(s, 2, 1000)
+                   : kernel == 'H' ? table.count_hashed(s, 2, 1000)
+                                   : table.count_rolling(s, 2, 1000);
         };
         const auto t0 = Clock::now();
         const gem::ElsCount obs = run(L);

@@ -53,10 +53,17 @@ public:
     ElsCount count_streams(const std::vector<uint8_t> &L, unsigned dmin, unsigned dmax) const;
     // Kernel R: rolling key along each residue class mod d, one load per step.
     ElsCount count_rolling(const std::vector<uint8_t> &L, unsigned dmin, unsigned dmax) const;
+    // Kernel H: kernel R with an 8 KB L1-resident hashed prefilter in front of
+    // the 4 MB bitmap (the bitmap is touched only on filter positives).
+    ElsCount count_hashed(const std::vector<uint8_t> &L, unsigned dmin, unsigned dmax) const;
+
+    // Multiplicative hash of a 25-bit key to the prefilter's 16 bits.
+    static uint32_t hash16(uint32_t key) { return (key * 0x9E3779B1u) >> 16; }
 
 private:
     uint32_t multiplicity(uint32_t key) const;
     std::vector<uint64_t> bits_;
+    std::vector<uint64_t> filter_;  // 2^16 bits
     std::vector<std::pair<uint32_t, uint32_t>> mult_;  // sorted (key, multiplicity)
 };
 

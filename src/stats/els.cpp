@@ -115,7 +115,7 @@ uint32_t key_of(const Word &w)
 
 }  // namespace
 
-Els5::Els5(const std::vector<Word> &targets) : bits_((1u << kKeyBits) / 64u, 0)
+Els5::Els5(const std::vector<Word> &targets) : bits_((1u << kKeyBits) / 64u, 0), filter_((1u << 16) / 64u, 0)
 {
     std::vector<uint32_t> keys;
     for (const Word &w : targets) {
@@ -130,6 +130,8 @@ Els5::Els5(const std::vector<Word> &targets) : bits_((1u << kKeyBits) / 64u, 0)
         while (j < keys.size() && keys[j] == keys[i])
             j++;
         bits_[keys[i] >> 6] |= 1ull << (keys[i] & 63u);
+        const uint32_t h = hash16(keys[i]);
+        filter_[h >> 6] |= 1ull << (h & 63u);
         mult_.emplace_back(keys[i], static_cast<uint32_t>(j - i));
         i = j;
     }
@@ -179,6 +181,31 @@ ElsCount Els5::count_rolling(const std::vector<uint8_t> &L, unsigned dmin, unsig
             for (size_t p = r; p < n; p += d) {
                 key = ((key << 5) | L[p]) & kKeyMask;
                 if (++have >= 5 && (bits[key >> 6] >> (key & 63u) & 1u))
+                    h += multiplicity(key);
+            }
+        }
+        c.total += h;
+        c.band[band_of(d)] += h;
+    }
+    return c;
+}
+
+ElsCount Els5::count_hashed(const std::vector<uint8_t> &L, unsigned dmin, unsigned dmax) const
+{
+    ElsCount c;
+    const size_t n = L.size();
+    const uint64_t *bits = bits_.data(), *filter = filter_.data();
+    for (unsigned d = std::max(2u, dmin); d <= dmax; d++) {
+        if (4u * d >= n)
+            break;
+        uint64_t h = 0;
+        for (size_t r = 0; r < d; r++) {
+            uint32_t key = 0;
+            unsigned have = 0;
+            for (size_t p = r; p < n; p += d) {
+                key = ((key << 5) | L[p]) & kKeyMask;
+                const uint32_t f = hash16(key);
+                if (++have >= 5 && (filter[f >> 6] >> (f & 63u) & 1u) && (bits[key >> 6] >> (key & 63u) & 1u))
                     h += multiplicity(key);
             }
         }
