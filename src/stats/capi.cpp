@@ -12,13 +12,17 @@ extern "C" {
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <map>
 #include <new>
+#include <thread>
+#include <utility>
 
 struct gemstat {
     gem::Corpus corpus;
     gem::Lexicon lex;
     std::string frozen;
     bool frozen_ok = false;
+    std::map<std::pair<uint32_t, int>, double> base_rate;  // (mask, kolel) -> fraction of types with p < alpha
 
     explicit gemstat(const char *path)
         : corpus(path), lex(corpus.raw(), 0, corpus.raw().n_books - 1, gem::Rule::Loose)
@@ -136,6 +140,23 @@ int gemstat_audit(gemstat *g, const char *a, const char *b, uint32_t mask, int k
         return 0;
     } catch (...) {
         return -1;
+    }
+}
+
+double gemstat_base_rate(gemstat *g, uint32_t mask, int kolel)
+{
+    try {
+        auto key = std::make_pair(mask, kolel);
+        auto it = g->base_rate.find(key);
+        if (it != g->base_rate.end())
+            return it->second;
+        std::vector<double> sh = gem::type_shares(g->lex, mask, kolel, std::max(1u, std::thread::hardware_concurrency()));
+        double below = static_cast<double>(std::count_if(sh.begin(), sh.end(), [](double x) { return x < gem::kAlpha; }));
+        double rate = sh.empty() ? 0.0 : below / static_cast<double>(sh.size());
+        g->base_rate.emplace(key, rate);
+        return rate;
+    } catch (...) {
+        return -1.0;
     }
 }
 

@@ -89,6 +89,11 @@ std::vector<double> all_shares(const Lexicon &lex, uint32_t mask, int kolel, uns
 
 }  // namespace
 
+std::vector<double> type_shares(const Lexicon &lex, uint32_t mask, int kolel, unsigned threads)
+{
+    return all_shares(lex, mask, kolel, threads);
+}
+
 R1 run_r1(const Lexicon &lex, unsigned threads)
 {
     auto t0 = Clock::now();

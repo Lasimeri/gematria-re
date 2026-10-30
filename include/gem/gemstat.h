@@ -59,6 +59,13 @@ long gemstat_values(const char *text, uint64_t out[GEMSTAT_METHODS], unsigned *w
 /* Claim auditor. Returns 0, or -1 if a or b is not Hebrew. */
 int gemstat_audit(gemstat *g, const char *a, const char *b, uint32_t mask, int kolel, struct gemstat_claim *out);
 
+/* Base rate of the verdict (exploratory, not preregistered): the fraction of
+ * corpus word types whose own match share is below alpha under (mask,
+ * kolel), i.e. how often the auditor says "rare" for a random A. The
+ * auditor's p depends on A alone; B only decides whether the claim holds.
+ * Computed once per (mask, kolel) and cached. Returns -1 on failure. */
+double gemstat_base_rate(gemstat *g, uint32_t mask, int kolel);
+
 /* Match share of a alone (no partner): fills out like gemstat_audit with
  * holds = 0, and up to cap of the most frequent matching types into hits.
  * Returns the number of hits written, or -1 if a is not Hebrew. */

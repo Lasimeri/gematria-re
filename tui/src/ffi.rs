@@ -63,6 +63,7 @@ unsafe extern "C" {
                      out: *mut Claim) -> c_int;
     fn gemstat_matches(g: *mut Gemstat, a: *const c_char, mask: u32, kolel: c_int, out: *mut Claim,
                        hits: *mut RawHit, cap: u32) -> c_long;
+    fn gemstat_base_rate(g: *mut Gemstat, mask: u32, kolel: c_int) -> f64;
 }
 
 fn text(buf: &[c_char]) -> String {
@@ -123,6 +124,15 @@ impl Engine {
             .map(|h| Hit { word: text(&h.word), tokens: h.tokens, first: text(&h.r#ref) })
             .collect();
         Some((out, hits))
+    }
+}
+
+impl Engine {
+    /// Fraction of corpus types the auditor would call "rare" under
+    /// (mask, kolel): its p depends on A alone (exploratory, cached).
+    pub fn base_rate(&mut self, mask: u32, kolel: i32) -> Option<f64> {
+        let r = unsafe { gemstat_base_rate(self.g, mask, kolel) };
+        (r >= 0.0).then_some(r)
     }
 }
 

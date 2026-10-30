@@ -36,6 +36,7 @@ struct Outcome {
     share: Option<Claim>,
     hits: Vec<Hit>,
     claim: Option<Claim>,
+    base_rate: Option<f64>,
     error: Option<String>,
 }
 
@@ -77,6 +78,7 @@ fn evaluate(engine: &mut Engine, input: &str, mask: u32, kolel: i32) -> Outcome 
     if let Some((share, hits)) = engine.matches(&out.a, mask, kolel, HITS) {
         out.share = Some(share);
         out.hits = hits;
+        out.base_rate = engine.base_rate(mask, kolel);
     }
     if let Some(b) = out.b.clone() {
         out.vb = ffi::values(&b);
@@ -137,6 +139,17 @@ fn verdict_lines(app: &App) -> Vec<(String, Tone)> {
             v.push((format!("a claimed equality with A under this set would be: {would}"), Tone::Note));
         }
     }
+    if let Some(r) = o.base_rate {
+        v.push((
+            format!("base rate: {:.1} % of ALL corpus types score p < {} under this set", 100.0 * r, share.alpha),
+            Tone::Note,
+        ));
+        v.push((
+            "p depends on A alone: the verdict prices the method set, not the pair (pair test: PREREG-003, not built)"
+                .into(),
+            Tone::Note,
+        ));
+    }
     v
 }
 
@@ -168,7 +181,7 @@ fn draw(f: &mut Frame, app: &App) {
         Constraint::Length(1),
         Constraint::Length(3),
         Constraint::Min(12),
-        Constraint::Length(6),
+        Constraint::Length(8),
         Constraint::Length(1),
     ])
     .areas(f.area());

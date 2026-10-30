@@ -5,6 +5,7 @@
 //   gem-stat CORPUS r2 [M1 M2]               R2 under PREREG-001 (default 1000 300)
 //   gem-stat CORPUS r2b [M1 M2]              R2 under PREREG-002 (suffixes stripped)
 //   gem-stat CORPUS r2x                      EXPLORATORY strict-rule variants
+//   gem-stat CORPUS base                     EXPLORATORY share of types the auditor calls rare
 //   gem-stat CORPUS claim A B [METHODS] [K]  claim auditor; METHODS = name,name|all
 //   gem-stat CORPUS word A [METHODS] [K]     values of A and its matching corpus types
 //
@@ -130,6 +131,28 @@ int cmd_r2(const gem::Corpus &corpus, const char *prereg, gem::StrictVariant rul
     return 0;
 }
 
+// EXPLORATORY: how often the auditor says "rare" for a random A. Its p is
+// A's match share, so this is the fraction of types below alpha.
+int cmd_base(const gem::Corpus &corpus, unsigned threads)
+{
+    gem::Lexicon lex(corpus.raw(), 0, corpus.raw().n_books - 1, gem::Rule::Loose);
+    std::printf("BASE RATE EXPLORATORY (not preregistered): p of the auditor = match share of A\n");
+    const struct {
+        const char *name;
+        uint32_t mask;
+        int kolel;
+    } sets[] = {{"hechrachi, K=0", 1u << GEM_M_HECHRACHI, 0}, {"16 methods, K=+/-1", gem::kAllMethods, 1}};
+    for (const auto &s : sets) {
+        std::vector<double> sh = gem::type_shares(lex, s.mask, s.kolel, threads);
+        size_t below = static_cast<size_t>(std::count_if(sh.begin(), sh.end(), [](double x) { return x < gem::kAlpha; }));
+        size_t lonely = static_cast<size_t>(std::count(sh.begin(), sh.end(), 0.0));
+        std::printf("  %-20s types with p < %.2f: %zu of %zu (%.1f %%); with no partner at all: %zu\n", s.name,
+                    gem::kAlpha, below, sh.size(), 100.0 * static_cast<double>(below) / static_cast<double>(sh.size()),
+                    lonely);
+    }
+    return 0;
+}
+
 int cmd_r2x(const gem::Corpus &corpus)
 {
     std::printf("R2x EXPLORATORY (not preregistered): strict-rule variants vs source 867\n");
@@ -219,6 +242,8 @@ int main(int argc, char **argv)
         }
         if (cmd == "r2x")
             return cmd_r2x(corpus);
+        if (cmd == "base")
+            return cmd_base(corpus, threads);
         if (cmd == "claim" && argc >= 5)
             return cmd_claim(corpus, argv[3], argv[4], parse_methods(argc > 5 ? argv[5] : nullptr),
                              argc > 6 ? std::stoi(argv[6]) : 0);

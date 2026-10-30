@@ -111,6 +111,11 @@ constexpr double kAlpha = 0.01;
 ClaimVerdict audit_claim(const Lexicon &lex, std::span<const uint8_t> a, std::span<const uint8_t> b,
                          uint32_t mask, int kolel);
 
+// Match share of every type against all other types under (mask, kolel):
+// the auditor's p for a claim whose A is that type. The p depends on A
+// alone; B only decides whether the claim holds.
+std::vector<double> type_shares(const Lexicon &lex, uint32_t mask, int kolel, unsigned threads);
+
 // R1 (dictionary-style collision figures, WLC analogue).
 struct R1 {
     uint32_t types = 0;

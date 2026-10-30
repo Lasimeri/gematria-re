@@ -11,12 +11,16 @@ preregistrations by sha256.
 ## Build and run
 
 ```
-git clone --depth 1 https://github.com/openscriptures/morphhb.git data/morphhb   # pin: 3d15126
+git init -q data/morphhb && git -C data/morphhb fetch -q --depth 1 \
+    https://github.com/openscriptures/morphhb.git 3d15126fb1ef74867fc1434be1942e837932691f \
+    && git -C data/morphhb checkout -q FETCH_HEAD                    # exact pin
 cmake -S . -B build -G Ninja && cmake --build build
 build/gem-ingest data/morphhb/wlc out/wlc.gemc     # S0 witness, prints the Torah comparison
 build/gem-selftest out/wlc.gemc                    # 16 methods vs cited values
 build/gem-stat out/wlc.gemc claim יין סוד          # claim auditor (add "all 1" for 16 methods, K=+/-1)
-build/gem-stat out/wlc.gemc r1 | r2 | r2b | r2x    # replications (r2x is exploratory)
+build/gem-stat out/wlc.gemc r1 | r2 | r2b          # replications under PREREG-001 / -002
+build/gem-stat out/wlc.gemc r2x | base             # exploratory diagnostics
+scripts/manifest.sh data/morphhb/wlc out/wlc.gemc | diff - prereg/wlc.manifest   # L0 hashes
 cd tui && cargo build --release && target/release/gem-tui
 ```
 
@@ -24,7 +28,7 @@ TUI input: Hebrew, or Michigan-Claremont ASCII (`)BGDHWZX+YKLMNS(PCQR&$T`,
 also `A` alef, `@` ayin); `A = B` audits a claim. Tab switches hechrachi /
 all 16 methods, F2 the kolel policy.
 
-## Measured (2026-10-30, Ryzen 7 5800X, 16 threads)
+## Measured (2026-10-30, Ryzen 7 5800X, 16 threads; timings are single runs, no repeats)
 
 | Stage | Result |
 |---|---|
@@ -32,11 +36,12 @@ all 16 methods, F2 the kolel policy.
 | Torah | 304,850 letters (Ben Asher 304,805: +45; third-party Leningrad 304,850: exact); vav +24, yod +34; tsadi -90 unresolved |
 | Methods | 16, Wikipedia "Gematria" (Cordovero list); selftest 21/21 incl. Sanhedrin 38a, Yoma 20a |
 | Claim yayin = sod | hechrachi, K=0: 82 of 39,614 types also match, p = 0.0021, rare (DoF 1); 16 methods, K=+/-1: p = 0.354, chance (DoF 48) |
+| Auditor base rate (exploratory) | p is A's match share and does not depend on B: yayin = ken (the top match in yayin's bucket) gets the same p = 0.0021 as Sanhedrin 38a's yayin = sod. Types with p < 0.01: 100.0 % under hechrachi K=0, 0.0 % under 16 methods K=+/-1. The verdict prices the declared method set; it does not separate an attested equality from a random same-value pair (pair-level test = PREREG-003, not built) |
 | R1 (gamatria.app analogue) | pair collision 1 in 704 (692); 30 types share 46.5 % (45 %); median share 0.136 % (0.13 %) / 34.7 % (34.9 %) |
 | R2 loose (Pichkhadze) | coverage 937 = source; 13 missing values identical |
 | R2 strict | PREREG-001 rule 907 (not replicated); PREREG-002 rule (suffixes stripped) 867 and 56 missing values identical |
 | R2 nulls (PREREG-002) | M1 927.90 +/- 5.54, M2 926.66 +/- 5.15 vs source 946.9 / 938.1: NOT MET; 0 of 1,300 replicates <= observed |
-| Xeon Phi 7120A | not used: R1 + R2 take 0.11 s + 0.36 s on the host, the card takes 23 s to boot |
+| Xeon Phi 7120A | not used: R1 computes in 0.11 s and the whole R2 process (1,000 M1 + 300 M2 replicates) runs in 0.36 s wall on the host; the card takes 23 s to boot |
 
 Out of scope by design: no decoding of persons, events or dates; no
 prediction mode. A bare equality is never reported without its p and DoF.
