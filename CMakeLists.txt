@@ -11,6 +11,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)  # no C++ modules; keeps clangd's flags plain
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(NOT CMAKE_BUILD_TYPE)
@@ -37,3 +38,17 @@ target_compile_options(gem-ingest PRIVATE ${GEM_WARN})
 add_executable(gem-selftest tests/selftest.c)
 target_link_libraries(gem-selftest PRIVATE gem)
 target_compile_options(gem-selftest PRIVATE ${GEM_WARN})
+
+# C++ statistics (PREREG-001): lexicon, claim auditor, R1, R2.
+find_package(OpenSSL REQUIRED)
+
+add_library(gemstats STATIC
+  src/stats/lexicon.cpp
+  src/stats/replicate.cpp)
+target_link_libraries(gemstats PUBLIC gem)
+target_compile_options(gemstats PRIVATE ${GEM_WARN})
+
+add_executable(gem-stat src/tools/gem_stat.cpp)
+target_link_libraries(gem-stat PRIVATE gemstats OpenSSL::Crypto)
+target_compile_options(gem-stat PRIVATE ${GEM_WARN})
+target_compile_definitions(gem-stat PRIVATE GEM_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
