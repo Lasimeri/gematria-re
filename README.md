@@ -73,5 +73,6 @@ prediction mode. A bare equality is never reported without its p and DoF.
 ║ PREREG-001 f09c7ad7 (before any statistic)   PREREG-002 1cac4867 (before its nulls)          ║
 ║ R2 loose 937 = source, missing list EXACT; strict 907 (001) / 867 EXACT (002)                ║
 ║ nulls 927.9 / 926.7 vs source 946.9 / 938.1: NOT MET; 0 of 1,300 replicates <= observed      ║
+║ auditor base rate: 100.0 % of types p < 0.01 (hechrachi K=0), 0.0 % (16 methods +/-1)        ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
