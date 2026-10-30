@@ -130,10 +130,25 @@ R1 run_r1(const Lexicon &lex, unsigned threads)
 
 namespace {
 
+// A Pentateuch word for coverage: the strict rule takes letters
+// [prefix, len - suffix) of content words.
 struct PWord {
-    uint32_t first, len, prefix;
+    uint32_t first, len, prefix, suffix;
     bool content;
 };
+
+std::vector<PWord> pentateuch_words(const gem_corpus &c, StrictVariant v)
+{
+    const uint32_t w_hi = c.books[4].first_word + c.books[4].n_words;
+    std::vector<PWord> words;
+    words.reserve(w_hi);
+    for (uint32_t w = 0; w < w_hi; w++) {
+        WordShape s = word_shape(c, w);
+        words.push_back({c.words[w].first_letter, c.words[w].n_letters, s.prefix_letters,
+                         v.strip_suffix ? s.suffix_letters : 0u, s.content && !(v.exclude_proper && s.proper)});
+    }
+    return words;
+}
 
 using Cover = std::bitset<1001>;
 
@@ -144,15 +159,18 @@ void coverage(const std::vector<uint8_t> &letters, const std::vector<PWord> &wor
     loose.reset();
     strict.reset();
     for (const PWord &w : words) {
-        uint64_t pre = 0, rest = 0;
+        uint64_t pre = 0, core = 0, post = 0;
+        const uint32_t core_end = w.len - w.suffix;
         for (uint32_t i = 0; i < w.prefix; i++)
             pre += table[letters[w.first + i]];
-        for (uint32_t i = w.prefix; i < w.len; i++)
-            rest += table[letters[w.first + i]];
-        if (pre + rest <= 1000)
-            loose.set(pre + rest);
-        if (w.content && w.prefix < w.len && rest <= 1000)
-            strict.set(rest);
+        for (uint32_t i = w.prefix; i < core_end; i++)
+            core += table[letters[w.first + i]];
+        for (uint32_t i = core_end; i < w.len; i++)
+            post += table[letters[w.first + i]];
+        if (pre + core + post <= 1000)
+            loose.set(pre + core + post);
+        if (w.content && w.prefix < core_end && core <= 1000)
+            strict.set(core);
     }
 }
 
@@ -192,18 +210,12 @@ NullRun summarize(const std::vector<unsigned> &reps, unsigned observed, double s
 
 }  // namespace
 
-R2 run_r2(const gem_corpus &c, unsigned m1_reps, unsigned m2_reps, unsigned threads)
+R2 run_r2(const gem_corpus &c, StrictVariant rule, unsigned m1_reps, unsigned m2_reps, unsigned threads)
 {
     const uint32_t *table = gem_letter_table(GEM_M_HECHRACHI);
-    const uint32_t w_hi = c.books[4].first_word + c.books[4].n_words;
     const uint32_t l_hi = c.books[4].first_letter + c.books[4].n_letters;
     std::vector<uint8_t> letters(c.letters, c.letters + l_hi);
-    std::vector<PWord> words;
-    words.reserve(w_hi);
-    for (uint32_t w = 0; w < w_hi; w++) {
-        WordShape s = word_shape(c, w);
-        words.push_back({c.words[w].first_letter, c.words[w].n_letters, s.prefix_letters, s.content});
-    }
+    const std::vector<PWord> words = pentateuch_words(c, rule);
 
     R2 r;
     Cover loose, strict;
@@ -279,23 +291,11 @@ R2 run_r2(const gem_corpus &c, unsigned m1_reps, unsigned m2_reps, unsigned thre
 
 VariantCoverage strict_variant(const gem_corpus &c, StrictVariant v)
 {
-    const uint32_t *table = gem_letter_table(GEM_M_HECHRACHI);
-    const uint32_t w_hi = c.books[4].first_word + c.books[4].n_words;
-    Cover cov;
-    for (uint32_t w = 0; w < w_hi; w++) {
-        WordShape s = word_shape(c, w);
-        if (!s.content || (v.exclude_proper && s.proper))
-            continue;
-        uint32_t lo = s.prefix_letters, hi = c.words[w].n_letters - (v.strip_suffix ? s.suffix_letters : 0u);
-        if (lo >= hi)
-            continue;
-        uint64_t val = 0;
-        for (uint32_t i = lo; i < hi; i++)
-            val += table[c.letters[c.words[w].first_letter + i]];
-        if (val <= 1000)
-            cov.set(val);
-    }
-    return {covered(cov), missing_upto(cov, 861)};
+    const uint32_t l_hi = c.books[4].first_letter + c.books[4].n_letters;
+    std::vector<uint8_t> letters(c.letters, c.letters + l_hi);
+    Cover loose, strict;
+    coverage(letters, pentateuch_words(c, v), gem_letter_table(GEM_M_HECHRACHI), loose, strict);
+    return {covered(strict), missing_upto(strict, 861)};
 }
 
 }  // namespace gem

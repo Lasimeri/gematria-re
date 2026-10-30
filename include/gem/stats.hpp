@@ -19,6 +19,10 @@ extern "C" {
 
 namespace gem {
 
+// One-line check of the corpus and every preregistration against their
+// frozen sha256; *ok is true only if all match.
+std::string frozen_status(const std::string &corpus_path, bool *ok);
+
 constexpr unsigned kMethods = GEM_M_COUNT;
 constexpr uint32_t kAllMethods = (1u << kMethods) - 1u;
 constexpr uint64_t kSeed = 20261030u;
@@ -130,13 +134,17 @@ struct R2 {
     std::vector<unsigned> loose_missing_861, strict_missing_861;
     NullRun m1_strict, m2_strict, m1_loose, m2_loose;
 };
-R2 run_r2(const gem_corpus &c, unsigned m1_reps, unsigned m2_reps, unsigned threads);
-
-// EXPLORATORY (not preregistered): strict-rule variants, to locate the
-// cause of a mismatch with the source; never a replacement result.
+// Strict-rule variants. PREREG-001 = {false, false}; PREREG-002 = {false, true}.
 struct StrictVariant {
     bool exclude_proper, strip_suffix;
 };
+constexpr StrictVariant kPrereg001Strict{false, false};
+constexpr StrictVariant kPrereg002Strict{false, true};
+
+R2 run_r2(const gem_corpus &c, StrictVariant rule, unsigned m1_reps, unsigned m2_reps, unsigned threads);
+
+// EXPLORATORY (not preregistered): strict coverage of any variant, to locate
+// the cause of a mismatch with the source; never a replacement result.
 struct VariantCoverage {
     unsigned covered = 0;
     std::vector<unsigned> missing_861;

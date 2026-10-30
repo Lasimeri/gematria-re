@@ -44,11 +44,13 @@ find_package(OpenSSL REQUIRED)
 
 add_library(gemstats STATIC
   src/stats/lexicon.cpp
-  src/stats/replicate.cpp)
-target_link_libraries(gemstats PUBLIC gem)
+  src/stats/replicate.cpp
+  src/stats/frozen.cpp
+  src/stats/capi.cpp)
+target_link_libraries(gemstats PUBLIC gem OpenSSL::Crypto)
 target_compile_options(gemstats PRIVATE ${GEM_WARN})
+target_compile_definitions(gemstats PRIVATE GEM_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 
 add_executable(gem-stat src/tools/gem_stat.cpp)
-target_link_libraries(gem-stat PRIVATE gemstats OpenSSL::Crypto)
+target_link_libraries(gem-stat PRIVATE gemstats)
 target_compile_options(gem-stat PRIVATE ${GEM_WARN})
-target_compile_definitions(gem-stat PRIVATE GEM_SOURCE_DIR="${CMAKE_SOURCE_DIR}")

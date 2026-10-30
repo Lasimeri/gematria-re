@@ -2,37 +2,32 @@
 //
 // Usage:
 //   gem-stat CORPUS r1                       R1 over all WLC word types
-//   gem-stat CORPUS r2 [M1 M2]               R2 coverage + nulls (default 1000 300)
+//   gem-stat CORPUS r2 [M1 M2]               R2 under PREREG-001 (default 1000 300)
+//   gem-stat CORPUS r2b [M1 M2]              R2 under PREREG-002 (suffixes stripped)
+//   gem-stat CORPUS r2x                      EXPLORATORY strict-rule variants
 //   gem-stat CORPUS claim A B [METHODS] [K]  claim auditor; METHODS = name,name|all
 //   gem-stat CORPUS word A [METHODS] [K]     values of A and its matching corpus types
 //
-// Every run first checks the corpus and prereg/PREREG-001.md against their
-// frozen sha256 (OpenSSL EVP) and prints the verdict of that check; results
-// carry the PREREG-001 label only when both match.
+// Every run first checks the corpus and the preregistration files against
+// their frozen sha256 (gem::frozen_status) and prints the verdict; results
+// carry a PREREG label only when it reads VERIFIED.
 #include "gem/stats.hpp"
 
 extern "C" {
 #include "gem/hebrew.h"
 }
 
-#include <openssl/evp.h>
-
 #include <algorithm>
+#include <bit>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
 #include <iterator>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 
-#ifndef GEM_SOURCE_DIR
-#error "GEM_SOURCE_DIR must name the repository root"
-#endif
-
 namespace {
-
-constexpr const char *kCorpusSha = "46ce61ff38c678231f7283b13085a5278bee631ea6b40db62ec2737eccf86575";
 
 // Pichkhadze, "Coincidence is cheap" (sapir861.com/research/coincidence):
 // values in 1..861 with no Pentateuch word.
@@ -41,39 +36,6 @@ const std::set<unsigned> kSrcStrictMissing = {
     1,   2,   229, 279, 369, 379, 384, 533, 549, 574, 579, 583, 587, 593, 597, 629, 634, 638, 639,
     642, 644, 664, 669, 694, 699, 721, 727, 729, 733, 739, 754, 765, 767, 771, 773, 774, 779, 783,
     787, 795, 797, 803, 813, 818, 821, 823, 827, 831, 833, 837, 839, 841, 843, 847, 853, 861};
-
-std::string sha256_file(const std::string &path)
-{
-    std::ifstream in(path, std::ios::binary);
-    if (!in)
-        return "unreadable";
-    std::string data((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    unsigned char md[EVP_MAX_MD_SIZE];
-    unsigned int n = 0;
-    if (!EVP_Digest(data.data(), data.size(), md, &n, EVP_sha256(), nullptr))
-        return "digest-failed";
-    std::string hex;
-    char b[3];
-    for (unsigned i = 0; i < n; i++) {
-        std::snprintf(b, sizeof b, "%02x", md[i]);
-        hex += b;
-    }
-    return hex;
-}
-
-bool check_frozen(const std::string &corpus)
-{
-    const std::string prereg = std::string(GEM_SOURCE_DIR) + "/prereg/PREREG-001.md";
-    std::ifstream f(std::string(GEM_SOURCE_DIR) + "/prereg/PREREG-001.sha256");
-    std::string want_prereg;
-    f >> want_prereg;
-    std::string got_corpus = sha256_file(corpus), got_prereg = sha256_file(prereg);
-    bool ok = got_corpus == kCorpusSha && got_prereg == want_prereg;
-    std::printf("PREREG-001 %s (prereg %.12s %s, corpus %.12s %s)\n", ok ? "VERIFIED" : "NOT VERIFIED",
-                got_prereg.c_str(), got_prereg == want_prereg ? "ok" : "MISMATCH", got_corpus.c_str(),
-                got_corpus == kCorpusSha ? "ok" : "MISMATCH");
-    return ok;
-}
 
 std::vector<uint8_t> parse_word(const char *text)
 {
@@ -151,10 +113,11 @@ int cmd_r1(const gem::Corpus &corpus, unsigned threads)
     return 0;
 }
 
-int cmd_r2(const gem::Corpus &corpus, unsigned m1, unsigned m2, unsigned threads)
+int cmd_r2(const gem::Corpus &corpus, const char *prereg, gem::StrictVariant rule, unsigned m1, unsigned m2,
+           unsigned threads)
 {
-    gem::R2 r = gem::run_r2(corpus.raw(), m1, m2, threads);
-    std::printf("R2 (Pentateuch coverage of 1..1000, hechrachi):\n");
+    gem::R2 r = gem::run_r2(corpus.raw(), rule, m1, m2, threads);
+    std::printf("R2 under %s strict rule (Pentateuch coverage of 1..1000, hechrachi):\n", prereg);
     std::printf("  loose  %u   (source 937)\n  strict %u   (source 867)\n", r.loose, r.strict);
     print_set_diff("loose ", r.loose_missing_861, kSrcLooseMissing);
     print_set_diff("strict", r.strict_missing_861, kSrcStrictMissing);
@@ -242,15 +205,18 @@ int main(int argc, char **argv)
         return 2;
     }
     try {
-        check_frozen(argv[1]);
+        std::printf("frozen: %s\n", gem::frozen_status(argv[1], nullptr).c_str());
         gem::Corpus corpus(argv[1]);
         unsigned threads = std::max(1u, std::thread::hardware_concurrency());
         std::string cmd = argv[2];
         if (cmd == "r1")
             return cmd_r1(corpus, threads);
-        if (cmd == "r2")
-            return cmd_r2(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
+        if (cmd == "r2" || cmd == "r2b") {
+            const bool b = cmd == "r2b";
+            return cmd_r2(corpus, b ? "PREREG-002" : "PREREG-001", b ? gem::kPrereg002Strict : gem::kPrereg001Strict,
+                          argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
                           argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 300u, threads);
+        }
         if (cmd == "r2x")
             return cmd_r2x(corpus);
         if (cmd == "claim" && argc >= 5)
