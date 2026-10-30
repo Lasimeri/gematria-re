@@ -1,0 +1,4 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok -> VERIFIED
+BASE RATE EXPLORATORY (not preregistered): p of the auditor = match share of A
+  hechrachi, K=0       types with p < 0.01: 39615 of 39615 (100.0 %); with no partner at all: 94
+  16 methods, K=+/-1   types with p < 0.01: 0 of 39615 (0.0 %); with no partner at all: 0

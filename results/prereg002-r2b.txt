@@ -1,0 +1,12 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok -> VERIFIED
+R2 under PREREG-002 strict rule (Pentateuch coverage of 1..1000, hechrachi):
+  loose  937   (source 937)
+  strict 867   (source 867)
+  loose  missing in 1..861: ours 13, source 13, only ours { }, only source { }  EXACT
+  strict missing in 1..861: ours 56, source 56, only ours { }, only source { }  EXACT
+nulls, strict (source: M1 946.9 +/- 4.9, M2 938.1 +/- 5.1):
+  M1 strict  1000 reps  mean  927.90  sd  5.54  z  -11.00  reps <= observed(867): 0  [0.15 s]
+  M2 strict   300 reps  mean  926.66  sd  5.15  z  -11.58  reps <= observed(867): 0  [0.18 s]
+nulls, loose:
+  M1 loose   1000 reps  mean  979.49  sd  3.57  z  -11.90  reps <= observed(937): 0  [0.15 s]
+  M2 loose    300 reps  mean  978.42  sd  3.78  z  -10.97  reps <= observed(937): 0  [0.18 s]

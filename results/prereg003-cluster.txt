@@ -1,0 +1,11 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok -> VERIFIED
+PREREG-003 clustering of equal-valued words (1000 M3 replicates, 1000 placebo tables, 19.9 s)
+scope      window  K           S            E      R | Q1: M3 mean (E check)  sd     z      p   | Q2: placebo R mean sd     p
+Pentateuch verse   0        1110       1109.7  1.000 |     1109.6     32.8   0.01  0.4915 |  1.001  0.062  0.4755  <- PRIMARY (Q2)
+Pentateuch chapter 0       36948      36251.7  1.019 |    36252.2    233.9   2.97  0.0040 |  0.994  0.026  0.1508
+Tanakh     verse   0        4559       4702.2  0.970 |     4706.0     70.7  -2.08  0.9820 |  1.003  0.038  0.8242
+Tanakh     chapter 0      132317     133876.9  0.988 |   133884.1    444.6  -3.52  1.0000 |  0.995  0.013  0.7003
+Pentateuch verse   1        4072       3825.8  1.064 |     3825.7     64.3   3.83  0.0010 |  1.006  0.038  0.0669
+Pentateuch chapter 1      128503     124804.1  1.030 |   124828.6    491.2   7.48  0.0010 |  0.996  0.016  0.0220
+Tanakh     verse   1       16595      15767.6  1.052 |    15771.9    128.3   6.41  0.0010 |  1.006  0.024  0.0340
+Tanakh     chapter 1      451115     449606.7  1.003 |   449626.1    902.8   1.65  0.0480 |  0.997  0.008  0.2078

@@ -148,6 +148,20 @@ constexpr StrictVariant kPrereg002Strict{false, true};
 
 R2 run_r2(const gem_corpus &c, StrictVariant rule, unsigned m1_reps, unsigned m2_reps, unsigned threads);
 
+// PREREG-003: clustering of equal-valued words. One cell per scope x window
+// x K: observed S, exact null mean E, R = S / E; Q1 against M3 replicates;
+// Q2 against random letter-value tables.
+struct ClusterCell {
+    const char *scope = "", *window = "";
+    int kolel = 0;
+    double s = 0, e = 0, r = 0;
+    unsigned reps = 0;
+    double rep_mean = 0, rep_sd = 0, q1_z = 0, q1_p = 0;
+    unsigned tables = 0;
+    double placebo_mean_r = 0, placebo_sd_r = 0, q2_p = 0;
+};
+std::vector<ClusterCell> run_cluster(const gem_corpus &c, unsigned tables, unsigned reps, unsigned threads);
+
 // EXPLORATORY (not preregistered): strict coverage of any variant, to locate
 // the cause of a mismatch with the source; never a replacement result.
 struct VariantCoverage {

@@ -6,6 +6,7 @@
 //   gem-stat CORPUS r2b [M1 M2]              R2 under PREREG-002 (suffixes stripped)
 //   gem-stat CORPUS r2x                      EXPLORATORY strict-rule variants
 //   gem-stat CORPUS base                     EXPLORATORY share of types the auditor calls rare
+//   gem-stat CORPUS cluster [TABLES REPS]    PREREG-003 clustering test (default 1000 1000)
 //   gem-stat CORPUS claim A B [METHODS] [K]  claim auditor; METHODS = name,name|all
 //   gem-stat CORPUS word A [METHODS] [K]     values of A and its matching corpus types
 //
@@ -19,6 +20,7 @@ extern "C" {
 }
 
 #include <algorithm>
+#include <chrono>
 #include <bit>
 #include <cstdio>
 #include <cstring>
@@ -128,6 +130,23 @@ int cmd_r2(const gem::Corpus &corpus, const char *prereg, gem::StrictVariant rul
     std::printf("nulls, loose:\n");
     print_null("M1 loose", r.m1_loose, r.loose);
     print_null("M2 loose", r.m2_loose, r.loose);
+    return 0;
+}
+
+// PREREG-003: clustering of equal-valued words (Q1 excess, Q2 table-specific).
+int cmd_cluster(const gem::Corpus &corpus, unsigned tables, unsigned reps, unsigned threads)
+{
+    const auto t0 = std::chrono::steady_clock::now();
+    const std::vector<gem::ClusterCell> cells = gem::run_cluster(corpus.raw(), tables, reps, threads);
+    const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("PREREG-003 clustering of equal-valued words (%u M3 replicates, %u placebo tables, %.1f s)\n", reps,
+                tables, secs);
+    std::printf("%-10s %-7s K  %10s %12s %6s | Q1: M3 mean (E check)  sd     z      p   | Q2: placebo R mean sd     p\n",
+                "scope", "window", "S", "E", "R");
+    for (const auto &c : cells)
+        std::printf("%-10s %-7s %d  %10.0f %12.1f %6.3f | %10.1f %8.1f %6.2f %7.4f | %6.3f %6.3f %7.4f%s\n", c.scope,
+                    c.window, c.kolel, c.s, c.e, c.r, c.rep_mean, c.rep_sd, c.q1_z, c.q1_p, c.placebo_mean_r,
+                    c.placebo_sd_r, c.q2_p, &c == &cells[0] ? "  <- PRIMARY (Q2)" : "");
     return 0;
 }
 
@@ -244,6 +263,9 @@ int main(int argc, char **argv)
             return cmd_r2x(corpus);
         if (cmd == "base")
             return cmd_base(corpus, threads);
+        if (cmd == "cluster")
+            return cmd_cluster(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
+                               argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 1000u, threads);
         if (cmd == "claim" && argc >= 5)
             return cmd_claim(corpus, argv[3], argv[4], parse_methods(argc > 5 ? argv[5] : nullptr),
                              argc > 6 ? std::stoi(argv[6]) : 0);
