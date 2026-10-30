@@ -1,0 +1,7 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok, PREREG-004 0589ea9d5f1a ok -> VERIFIED
+PREREG-004 part A: Rambsel/Jeffrey, Isaiah 52:13-53:12
+A1 from the second yod of יאריכ (letter 629898, Isa 53:10) back by 20: ישועשמי  -> PRESENT (claim's ELS exists in WLC)
+A2 ישוע, 2<=|d|<=20, passage 800 letters: observed 1, expected (iid) 0.661, M1 mean 0.956 sd 1.002, p = 0.6054
+A3 ישועשמי, 2<=|d|<=20: passage expected 2.930e-04, P(at least one) 2.929e-04 = 1 in 3414 (claimed: 1 in 5e16)
+   whole Tanakh (1197042 letters): expected 0.478, observed 2
+rambsel wall 0.11 s

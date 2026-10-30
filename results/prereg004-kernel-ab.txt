@@ -1,0 +1,6 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok, PREREG-004 0589ea9d5f1a ok -> VERIFIED
+bench: Genesis 78069 letters, 135 targets (x2 directions), d = 2..200, 5 interleaved rounds, 1 thread
+  P plain per-word scan        total     7792  min   4.9067 s  median   4.9377 s  max   4.9510 s
+  S multi-target, 5 streams    total     7792  min   0.0292 s  median   0.0295 s  max   0.0307 s
+  R multi-target, rolling key  total     7792  min   0.0224 s  median   0.0232 s  max   0.0242 s
+  counts identical across kernels: YES
