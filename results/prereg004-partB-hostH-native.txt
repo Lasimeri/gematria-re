@@ -1,0 +1,4 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok, PREREG-004 0589ea9d5f1a ok -> VERIFIED
+PREREG-004 part B: own 5-letter words as ELS, 2 <= d <= 1000 both directions, kernel H, 1000 M1 replicates
+Gen   78069 letters,  135 targets: T = 39472 (bands 359 / 3513 / 35600), M1 mean 39819.3 sd 207.2, z -1.68, p = 0.9570  <- PRIMARY  [11.8 s]
+Ps    78833 letters,  123 targets: T = 31391 (bands 270 / 2940 / 28181), M1 mean 31507.1 sd 181.1, z -0.64, p = 0.7413  (control)  [11.9 s]

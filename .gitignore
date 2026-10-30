@@ -3,3 +3,4 @@ out/
 data/morphhb/
 tui/target/
 build-card/
+build-native/

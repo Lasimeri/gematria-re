@@ -64,10 +64,10 @@ Timings are single runs unless a spread is given.
 | R1 (gamatria.app analogue) | Pair collision 1 in 704 (source 692). 30 types share a value 46.5 % (45 %). Median match share 0.136 % (0.13 %), and 34.7 % with 16 methods (34.9 %). |
 | R2 (Pichkhadze) | Loose coverage 937, with all 13 missing values identical. PREREG-001's strict rule gives 907 (not replicated). PREREG-002's rule (suffixes stripped) gives 867, with all 56 missing values identical. Nulls 927.9 / 926.7 against 946.9 / 938.1: NOT MET. 0 of 1,300 replicates fall at or below the observed value. |
 | PREREG-003 clustering | Do equal-valued, different words share verses beyond chance? Primary (Pentateuch, verse, K=0): S 1,110 vs exact E 1,109.7, R 1.000. Against 1,000 random value tables, p = 0.4755: no design signal. Secondary Q2: 0 of 7 significant. The K=+/-1 excess also appears under random tables (generic clustering). |
-| PREREG-004 A (Rambsel/Jeffrey) | ישועשמי at skip -20 from Isa 53:10 is present in WLC. P(at least one) in Isa 52:13-53:12 = 1 in 3,414; claimed 1 in 5e16. ישוע alone: observed 1, expected 0.661, p 0.605. |
+| PREREG-004 A (Rambsel/Jeffrey) | ישועשמי at skip -20 from Isa 53:10 is present in WLC. P(at least one) in Isa 52:13-53:12 = 1 in 3,414; claimed 1 in 5e16. Over all of Isaiah (exploratory, the claim's own scope): it occurs once, and P(at least one) = 1 in 38 (same model, arithmetic). ישוע alone: observed 1, expected 0.661, p 0.605. |
 | PREREG-004 B (own words as ELS) | Genesis T 39,472 vs permutation null 39,819.3 +/- 207.2, z -1.68, p 0.957. Psalms control: z -0.64. No excess. |
 | ELS kernels (host, 1 thread, d 2..200) | Plain 4.918 s; 5-stream 0.0299 s; rolling key 0.0231 s; rolling + 8 KB prefilter **0.0187 s**. All counts identical. |
-| Xeon Phi 7120A, kernel V (vpermd register filter) | Exact counts on 1,001 texts, reproducing PREREG-004 B to the last digit. Same split over d: 11.68 vs 17.9 ms/text (**1.53x**). Batch mode with on-card permutation generation: 10.62 s vs host best 12.7 s per 1,001 texts (**1.20x**). End-to-end with the card booted: 11.1 s vs 12.9 s (**1.14x**). Cold boot adds 23.3 s (the host wins). |
+| Xeon Phi 7120A, kernel V (vpermd register filter) | Exact counts on 1,001 texts, reproducing PREREG-004 B to the last digit. Same split over d: 11.68 vs 17.9 ms/text (1.53x). Batch mode with on-card permutation generation: 10.62 s per 1,001 texts. The best scalar host kernel (H, `-march=native`, one text per thread) takes 11.8 / 11.7 / 11.8 s, so the card wins the kernel **1.11x**. End-to-end with the card booted: about 11.3 s (single run) vs 11.9 s, **1.05x = a tie**. Cold boot adds 23.3 s (the host wins). An AVX2 host version of the lane kernel was not built: the card beats the best scalar host kernel, nothing more. |
 
 Out of scope by design: no decoding of persons, events or dates, and no
 prediction mode. A bare equality is never reported without its p and DoF
@@ -88,7 +88,7 @@ price.
 ║ ┌─ Xeon Phi 7120A (KNC) ───┐   ┌─ gem-els export gen ─────┐   ┌─ libgemstats + libgem ───┐   ║
 ║ │ kernel V: vpermd filter  │   │ 80 KB: text + seeds      │   │ 16 methods, 21/21 cited  │   ║
 ║ │ 1,001 texts in 10.62 s   │◀──│ phi put 0.05 s           │◀──│ auditor, R1, R2, cluster │   ║
-║ │ host best 12.7 s: 1.20x  │   │ card makes 1,000 perms   │   │ ELS kernels P S R H      │   ║
+║ │ host scalar 11.8 s: 1.11x│   │ card makes 1,000 perms   │   │ ELS kernels P S R H      │   ║
 ║ └──────────────────────────┘   └──────────────────────────┘   └──────────────────────────┘   ║
 ║                                                                             ▼                ║
 ║ ┌─ Konsole (desktop) ──────┐   ┌─ gem-tui (Rust 2024) ────┐   ┌─ gemstat.h (C ABI) ──────┐   ║
@@ -100,8 +100,8 @@ price.
 ║ PREREG-001 f09c7ad7, -002 1cac4867, -003 048f905c, -004 0589ea9d: each frozen before its run ║
 ║ R2 loose 937 EXACT; strict 867 EXACT (002); nulls 927.9 / 926.7 vs 946.9 / 938.1: NOT MET    ║
 ║ PREREG-003 do equal values cluster? primary R 1.000, p 0.4755: no design signal              ║
-║ PREREG-004 ELS: Rambsel phrase present, 1 in 3,414 (claimed 1 in 5e16); Genesis z -1.68      ║
+║ PREREG-004 ELS: Rambsel phrase 1 in 3,414 (passage), 1 in 38 (Isaiah); claim 5e16; z -1.68   ║
 ║ auditor base rate: 100.0 % of types 'rare' (hechrachi K=0), 0.0 % (16 methods +/-1)          ║
-║ card A/B exact counts: 1.53x same split, 1.20x best vs best, 1.14x end-to-end (booted)       ║
+║ card vs best scalar host: exact counts, kernel 1.11x, end-to-end 1.05x = tie (booted)        ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
