@@ -1,0 +1,9 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok, PREREG-004 0589ea9d5f1a ok -> VERIFIED
+text 0 total 39472 bands 359 3513 35600
+text 1 total 39858 bands 346 3714 35798
+text 2 total 39868 bands 354 3723 35791
+text 3 total 39628 bands 344 3692 35592
+text 4 total 39759 bands 364 3589 35806
+text 5 total 40079 bands 380 3767 35932
+text 6 total 39724 bands 377 3636 35711
+text 7 total 39499 bands 371 3667 35461

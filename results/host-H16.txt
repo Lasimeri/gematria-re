@@ -1,0 +1,9 @@
+text 0 total 39472 bands 359 3513 35600
+text 1 total 39858 bands 346 3714 35798
+text 2 total 39868 bands 354 3723 35791
+text 3 total 39628 bands 344 3692 35592
+text 4 total 39759 bands 364 3589 35806
+text 5 total 40079 bands 380 3767 35932
+text 6 total 39724 bands 377 3636 35711
+text 7 total 39499 bands 371 3667 35461
+kernel H, 16 threads, 8 texts x 5 rounds: per-text median 0.018006 s, min 0.015114 s, max 0.020814 s, sum of medians 0.1445 s

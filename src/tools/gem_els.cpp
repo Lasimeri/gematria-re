@@ -3,6 +3,7 @@
 // Usage:
 //   gem-els CORPUS find WORD BOOK [CH1 V1 CH2 V2] [DMAX]   list occurrences, 2 <= |d| <= DMAX (default 20)
 //   gem-els CORPUS bench [DMAX] [ROUNDS]                   A/B of kernels P, S, R on Genesis targets
+//   gem-els CORPUS export OUT.bin [REPS] [noref]           card A/B input (+ kernel-H reference counts)
 //   gem-els CORPUS rambsel                                 PREREG-004 part A
 //   gem-els CORPUS design [REPS] [KERNEL]                  PREREG-004 part B (KERNEL S, R or H)
 #include "gem/els.hpp"
@@ -18,6 +19,7 @@ extern "C" {
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <functional>
 #include <map>
 #include <stdexcept>
@@ -187,6 +189,61 @@ int cmd_bench(const gem::Corpus &corpus, unsigned dmax, unsigned rounds)
     return same ? 0 : 1;
 }
 
+// Input of card/els_card.c: Genesis + REPS permuted replicates (PREREG-004 B
+// seeds, analysis 8) + sorted (key, multiplicity) of the targets; with
+// reference = true prints the kernel-H count of every text, the gate of the
+// host/card A/B (the full-size production check compares the null's
+// summary with the published PREREG-004 B result instead).
+int cmd_export(const gem::Corpus &corpus, const char *path, unsigned reps, bool reference)
+{
+    const gem_corpus &c = corpus.raw();
+    const auto L = book_stream(c, 0);
+    const auto targets = book_targets(c, 0);
+    const gem::Els5 table(targets);
+    std::vector<uint32_t> keys;
+    for (const gem::Word &w : targets)
+        for (const gem::Word &x : {w, gem::Word(w.rbegin(), w.rend())}) {
+            uint32_t k = 0;
+            for (uint8_t letter : x)
+                k = (k << 5) | letter;
+            keys.push_back(k);
+        }
+    std::sort(keys.begin(), keys.end());
+    std::vector<uint32_t> uniq, mult;
+    for (size_t i = 0; i < keys.size();) {
+        size_t j = i;
+        while (j < keys.size() && keys[j] == keys[i])
+            j++;
+        uniq.push_back(keys[i]);
+        mult.push_back(static_cast<uint32_t>(j - i));
+        i = j;
+    }
+    FILE *f = std::fopen(path, "wb");
+    if (!f)
+        throw std::runtime_error(std::string("cannot write ") + path);
+    uint32_t hdr[7] = {0, static_cast<uint32_t>(L.size()), 1u + reps, static_cast<uint32_t>(uniq.size()), 2u, 1000u, 0u};
+    std::memcpy(hdr, "ELSB", 4);
+    std::fwrite(hdr, sizeof hdr, 1, f);
+    for (unsigned t = 0; t <= reps; t++) {
+        std::vector<uint8_t> text = L;
+        if (t > 0) {
+            gem::Rng rng(gem::replicate_seed(gem::kSeed, 8, t - 1));
+            shuffle(text, rng);
+        }
+        std::fwrite(text.data(), 1, text.size(), f);
+        if (!reference)
+            continue;
+        const gem::ElsCount x = table.count_hashed(text, 2, 1000);
+        std::printf("text %u total %llu bands %llu %llu %llu\n", t, static_cast<unsigned long long>(x.total),
+                    static_cast<unsigned long long>(x.band[0]), static_cast<unsigned long long>(x.band[1]),
+                    static_cast<unsigned long long>(x.band[2]));
+    }
+    std::fwrite(uniq.data(), sizeof(uint32_t), uniq.size(), f);
+    std::fwrite(mult.data(), sizeof(uint32_t), mult.size(), f);
+    std::fclose(f);
+    return 0;
+}
+
 int cmd_rambsel(const gem::Corpus &corpus, unsigned threads)
 {
     const gem_corpus &c = corpus.raw();
@@ -340,6 +397,9 @@ int main(int argc, char **argv)
         if (cmd == "bench")
             return cmd_bench(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 200u,
                              argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 5u);
+        if (cmd == "export" && argc >= 4)
+            return cmd_export(corpus, argv[3], argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 7u,
+                              !(argc > 5 && std::string(argv[5]) == "noref"));
         if (cmd == "rambsel")
             return cmd_rambsel(corpus, threads);
         if (cmd == "design")

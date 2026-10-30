@@ -56,6 +56,12 @@ target_compile_definitions(gemstats PRIVATE GEM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 add_executable(gem-pairs-test tests/pairs_test.cpp)
 target_compile_options(gem-pairs-test PRIVATE ${GEM_WARN})
 
+# Host build of the card A/B kernel program (the same source card/build.sh
+# compiles for the 7120A); -march=native for the strongest host opponent.
+add_executable(els-card-host card/els_card.c)
+target_compile_options(els-card-host PRIVATE ${GEM_WARN} -march=native)
+target_link_libraries(els-card-host PRIVATE Threads::Threads)
+
 add_executable(gem-els src/tools/gem_els.cpp)
 target_link_libraries(gem-els PRIVATE gemstats)
 target_compile_options(gem-els PRIVATE ${GEM_WARN})
