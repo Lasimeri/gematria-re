@@ -18,7 +18,7 @@ namespace gem {
 namespace {
 
 constexpr const char *kCorpusSha = "46ce61ff38c678231f7283b13085a5278bee631ea6b40db62ec2737eccf86575";
-constexpr const char *kPreregs[] = {"PREREG-001", "PREREG-002", "PREREG-003"};
+constexpr const char *kPreregs[] = {"PREREG-001", "PREREG-002", "PREREG-003", "PREREG-004"};
 
 std::string sha256_file(const std::string &path)
 {
