@@ -20,6 +20,15 @@
  * avgad is one 22-cycle. With a corpus: the Torah's standard sum computed
  * by table and by letter histogram must agree, and the attested words are
  * counted in WLC.
+ *
+ * Otiyot be-milui (letter names spelled out) is not a method of this
+ * library: the same article (revision 1371502697, 2026-08-26) gives no
+ * table of the 22 names, only examples, and states that he (he-yod, he-alef,
+ * he-he) and vav (vav-yod-vav, vav-alef-vav, vav-vav) have three spellings
+ * each, so that the Tetragrammaton alone has 27 spellings and 13 sums, of
+ * which 72, 63, 45 and 52 carry names. milui_tetragrammaton() computes that
+ * one fully specified case: it checks the article's count and shows what
+ * the method does to the degrees of freedom of a single word.
  */
 #include "gem/corpus.h"
 #include "gem/hebrew.h"
@@ -111,6 +120,30 @@ static void cipher_properties(void)
     check("avgad cycle length", steps, 22);
 }
 
+static void milui_tetragrammaton(void)
+{
+    printf("otiyot be-milui of the Tetragrammaton (every spelling the source names):\n");
+    const unsigned long long yod = val(GEM_M_HECHRACHI, "יוד");
+    const char *const he_names[3] = { "הי", "הא", "הה" };
+    const char *const vav_names[3] = { "ויו", "ואו", "וו" };
+    unsigned char seen[128] = { 0 };
+    unsigned spellings = 0, sums = 0;
+    for (int h1 = 0; h1 < 3; h1++)
+        for (int v = 0; v < 3; v++)
+            for (int h2 = 0; h2 < 3; h2++) {
+                unsigned long long sum = yod + val(GEM_M_HECHRACHI, he_names[h1]) +
+                                         val(GEM_M_HECHRACHI, vav_names[v]) + val(GEM_M_HECHRACHI, he_names[h2]);
+                spellings++;
+                if (sum < sizeof seen && !seen[sum]) {
+                    seen[sum] = 1;
+                    sums++;
+                }
+            }
+    check("spellings", spellings, 27);
+    check("distinct sums", sums, 13);
+    check("named sums present: 72 + 63 + 45 + 52", (unsigned long long)(seen[72] + seen[63] + seen[45] + seen[52]), 4);
+}
+
 static void corpus_checks(const char *path)
 {
     struct gem_corpus c;
@@ -148,6 +181,7 @@ int main(int argc, char **argv)
 {
     cited_values();
     cipher_properties();
+    milui_tetragrammaton();
     if (argc > 1)
         corpus_checks(argv[1]);
     printf("selftest: %d passed, %d failed\n", pass, fail);

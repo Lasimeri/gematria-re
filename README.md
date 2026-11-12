@@ -94,7 +94,8 @@ Timings are single runs unless a spread is given.
 |---|---|
 | S0 ingest | 39 books, 23,213 verses, 305,507 words, 1,197,042 letters; 0 violations, 0 unknown code points; 0.09 s. |
 | Torah | 304,850 letters: +45 against Ben Asher's 304,805, exactly the third-party Leningrad count 304,850. Vav +24, yod +34; tsadi -90 against the reference table (settled by the second witness, stage K below: the table is the outlier). |
-| Methods | 16, from Wikipedia "Gematria" (Cordovero list). Selftest 21/21, including Sanhedrin 38a and Yoma 20a. |
+| Methods | 16, from Wikipedia "Gematria" (Cordovero list). Selftest 24/24, including Sanhedrin 38a and Yoma 20a. |
+| Methods left out by design | Otiyot be-milui, mispar ne'elam and mispar mispari. The cited article gives no table for them, only examples, and names the open choices itself: three spellings each for he and vav, and "971 or 976" for one mispari example. The one fully specified case is computed in the selftest: the Tetragrammaton has 27 milui spellings and 13 distinct sums (72, 63, 45, 52 among them), so the method turns one word into 13 values before any comparison is made. |
 | Claim yayin = sod | Hechrachi, K=0: 82 of 39,614 types also match, p = 0.0021, rare (1 DoF). 16 methods, K=+/-1: p = 0.354, chance (48 DoF). |
 | Auditor base rate (exploratory) | p is A's match share and does not depend on B: yayin = ken scores exactly like yayin = sod. Share of types with p < 0.01: 100.0 % under hechrachi K=0, 0.0 % under 16 methods K=+/-1. The verdict prices the declared method set, not the pair. |
 | R1 (gamatria.app analogue) | Pair collision 1 in 704 (source 692). 30 types share a value 46.5 % (45 %). Median match share 0.136 % (0.13 %), and 34.7 % with 16 methods (34.9 %). |
