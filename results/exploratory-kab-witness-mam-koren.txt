@@ -1,0 +1,21 @@
+corpus KOREN (data/koren/koren-torah.txt): 747,153 bytes, 5,847 verses, 79,976 words, 304,805 letters, 12,830 new types, 5.4 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus MAM (data/mam/mam-torah.txt): 1,444,852 bytes, 5,846 verses, 79,977 words, 304,801 letters, 3 new types, 9.1 ms
+  dropped marks 334,382; separators: Hebrew punctuation 17,712, ASCII 72, foreign 0, malformed 0; overlong words 0
+witness MAM against KOREN, aligned by chapter (0 chapters of MAM have no base chapter):
+  book   chapters   verses   verses     letters     letters   delta   chapters   chapters
+                     KOREN      MAM       KOREN         MAM          identical  differing
+  Gen          50    1,533    1,533      78,064      78,063      -1         47          3
+  Exod         40    1,210    1,210      63,529      63,527      -2         38          2
+  Lev          27      859      859      44,790      44,790      +0         27          0
+  Num          36    1,289    1,288      63,530      63,529      -1         31          5
+  Deut         34      956      956      54,892      54,892      +0         32          2
+  all         187    5,847    5,846     304,805     304,801      -4        175         12
+letters whose count differs (code point: KOREN, MAM, delta):
+  U+05D0 27059 27060 +1; U+05D4 28056 28055 -1; U+05D5 30513 30509 -4;
+  tsadi + final tsadi: KOREN 3962, MAM 3962
+sites: 12
+  division             1 sites, net +0 letters
+  other                3 sites, net +0 letters
+  plene/defective      8 sites, net -4 letters
+  written to out/kab/witness-mam-koren.tsv

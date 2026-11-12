@@ -1,0 +1,21 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 61.3 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus KOREN (data/koren/koren-torah.txt): 747,153 bytes, 5,847 verses, 79,976 words, 304,805 letters, 33 new types, 15.4 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+witness KOREN against WLC, aligned by chapter (0 chapters of KOREN have no base chapter):
+  book   chapters   verses   verses     letters     letters   delta   chapters   chapters
+                       WLC    KOREN         WLC       KOREN          identical  differing
+  Gen          50    1,533    1,533      78,069      78,064      -5         34         16
+  Exod         40    1,213    1,210      63,531      63,529      -2         21         19
+  Lev          27      859      859      44,795      44,790      -5         16         11
+  Num          36    1,289    1,289      63,545      63,530     -15         18         18
+  Deut         34      959      956      54,910      54,892     -18         12         22
+  all         187    5,853    5,847     304,850     304,805     -45        101         86
+letters whose count differs (code point: WLC, KOREN, delta):
+  U+05D0 27060 27059 -1; U+05D4 28055 28056 +1; U+05D5 30533 30513 -20; U+05D9 31556 31531 -25;
+  tsadi + final tsadi: WLC 3962, KOREN 3962
+sites: 136
+  division             6 sites, net +0 letters
+  other                1 sites, net +0 letters
+  plene/defective    129 sites, net -45 letters
+  written to out/kab/witness-koren-wlc.tsv

@@ -6,3 +6,5 @@ build-card/
 build-native/
 data/mam/raw/
 data/mam/*.txt
+data/koren/*.koren
+data/koren/*.txt

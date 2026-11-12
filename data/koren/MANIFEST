@@ -1,0 +1,8 @@
+Gen: raw sha256 3b45732824972890c4a702da5cd01b72a91576917bab1850c2b6f13888e2cdff  https://users.cecs.anu.edu.au/~bdm/dilugim/data/genesis.koren
+Exod: raw sha256 cdb7c10db2a566489d858b2ecd413aef4b46f17258e326ef8df0a5be4bef84a8  https://users.cecs.anu.edu.au/~bdm/dilugim/data/exodus.koren
+Lev: raw sha256 8e5e0cd4cbe3b42d9006c18320f6924e2d903635c385c4b8fc7fb323c1c047e3  https://users.cecs.anu.edu.au/~bdm/dilugim/data/leviticus.koren
+Num: raw sha256 7b4c566b53445790a0bb1e465b1e2a73818c4e05686766fe69618e268be9060b  https://users.cecs.anu.edu.au/~bdm/dilugim/data/numbers.koren
+Deut: raw sha256 38b09334fcb77f5cd219fe3159a509c27f6c433da2fba09a83fbb333c9a5fb97  https://users.cecs.anu.edu.au/~bdm/dilugim/data/deuteronomy.koren
+War and Peace (first 78,064 letters, Hebrew): raw sha256 b375e4878d37b018864a6313005a655157055cdba9c66f62234c5d90163da133  https://users.cecs.anu.edu.au/~bdm/dilugim/data/WNP.txt
+text sha256 2beede7be9c92044b189c9ec85ea744603f45b2be5461b28979d5ccab49b3419  koren-torah.txt
+bytes 747153 lines 5847

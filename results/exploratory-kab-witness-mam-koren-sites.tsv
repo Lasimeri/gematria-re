@@ -1,0 +1,14 @@
+# sites where MAM differs from KOREN, aligned by chapter; delta = letters in MAM minus letters in KOREN
+ref	kind	delta	KOREN	MAM
+Gen 4:13	plene/defective	-1	מנשוא	מנשא
+Gen 7:11	plene/defective	-1	מעינות	מעינת
+Gen 9:29	plene/defective	+1	ויהי	ויהיו
+Exod 25:31	plene/defective	-1	תיעשה	תעשה
+Exod 28:26	plene/defective	-1	האפוד	האפד
+Num 1:17	plene/defective	-1	בשמות	בשמת
+Num 10:10	plene/defective	+1	חדשכם	חדשיכם
+Num 22:5	plene/defective	-1	בעור	בער
+Num 25:19	other	-13	ויהי אחרי המגפה	
+Num 26:1	other	+13		ויהי אחרי המגפה
+Deut 23:2	other	+0	דכה	דכא
+Deut 32:6	division	+0	הליהוה	ה ליהוה
