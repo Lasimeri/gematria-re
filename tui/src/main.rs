@@ -5,23 +5,19 @@
 //! methods, the corpus word types sharing a value with A, and the claim
 //! verdict with its p and its price in degrees of freedom. Tab switches the
 //! method set (hechrachi / all 16), F2 the kolel policy (K = 0 / +-1),
-//! Ctrl-U clears, Esc quits. The screen redraws only on input.
+//! Ctrl-U clears, Esc quits. The screen redraws only on input or when the
+//! terminal changes size. The terminal layer is src/term.rs (std and libc
+//! only).
 //!
 //! `gem-tui [CORPUS] --once QUERY [--all] [--kolel]` prints the same panels
 //! as text (same compute path) and exits.
 mod ffi;
+mod term;
 mod translit;
 
 use ffi::{Claim, Engine, Hit, METHODS};
-use ratatui::{
-    DefaultTerminal, Frame,
-    crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
-    layout::{Constraint, Layout},
-    style::{Color, Style, Stylize},
-    text::{Line, Span},
-    widgets::{Block, Paragraph, Row, Table},
-};
 use std::process::ExitCode;
+use term::{Key, Screen, Style};
 
 const HITS: usize = 40;
 const HECHRACHI: u32 = 1;
@@ -155,114 +151,124 @@ fn verdict_lines(app: &App) -> Vec<(String, Tone)> {
 
 fn tone_style(t: Tone) -> Style {
     match t {
-        Tone::Plain => Style::new(),
-        Tone::Good => Style::new().fg(Color::Green).bold(),
-        Tone::Bad => Style::new().fg(Color::Red).bold(),
-        Tone::Note => Style::new().fg(Color::Yellow),
+        Tone::Plain => Style::PLAIN,
+        Tone::Good => Style::fg(term::GREEN).bold(),
+        Tone::Bad => Style::fg(term::RED).bold(),
+        Tone::Note => Style::fg(term::YELLOW),
     }
 }
 
-fn value_rows(app: &App) -> Vec<Row<'static>> {
+// Layout: head line, query box (3 rows), body (values left, matches right),
+// verdict box, key line. Column offsets inside the two tables.
+const QUERY_ROWS: u16 = 3;
+const VERDICT_ROWS: u16 = 8;
+const BODY_MIN_ROWS: u16 = 12;
+const VALUES_WIDTH: u16 = 48;
+const VALUE_COLS: [(u16, u16); 4] = [(1, 14), (16, 13), (30, 2), (33, 13)];
+const HIT_COLS: [(u16, u16); 2] = [(1, 7), (9, 13)];
+const HIT_WORD_COL: u16 = 23;
+
+fn draw(scr: &mut Screen, app: &App) -> std::io::Result<()> {
+    let (w, h) = scr.size();
     let o = &app.out;
-    let matching = o.claim.map(|c| c.matching).unwrap_or(0);
-    (0..METHODS)
-        .map(|m| {
-            let a = o.va.map(|v| v[m].to_string()).unwrap_or_default();
-            let b = o.vb.map(|v| v[m].to_string()).unwrap_or_default();
-            let mark = if matching >> m & 1 == 1 { "=" } else { "" };
-            let style = if app.mask >> m & 1 == 1 { Style::new().bold() } else { Style::new().dim() };
-            Row::new(vec![ffi::method_name(m), a, mark.to_string(), b]).style(style)
-        })
-        .collect()
-}
+    let body_y = 1 + QUERY_ROWS;
+    let body_rows = h.saturating_sub(body_y + VERDICT_ROWS + 1).max(BODY_MIN_ROWS);
+    let verdict_y = body_y + body_rows;
+    scr.begin();
 
-fn draw(f: &mut Frame, app: &App) {
-    let [head, query, body, verdict, keys] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(3),
-        Constraint::Min(12),
-        Constraint::Length(8),
-        Constraint::Length(1),
-    ])
-    .areas(f.area());
+    let x = scr.text(0, 0, w, " gematria-re ", Style::BOLD);
+    let head = format!("| WLC 4.20 | {} types, {} tokens | frozen corpus + preregs: ", app.info.types, app.info.tokens);
+    let x = scr.text(x, 0, w, &head, Style::PLAIN);
+    if app.info.frozen_ok {
+        scr.text(x, 0, w, "VERIFIED", Style::fg(term::GREEN).bold());
+    } else {
+        scr.text(x, 0, w, "NOT VERIFIED", Style::fg(term::RED).bold());
+    }
 
-    let frozen = if app.info.frozen_ok { "VERIFIED".green().bold() } else { "NOT VERIFIED".red().bold() };
-    f.render_widget(
-        Line::from(vec![
-            " gematria-re ".bold(),
-            Span::raw(format!("| WLC 4.20 | {} types, {} tokens | frozen corpus + preregs: ", app.info.types, app.info.tokens)),
-            frozen,
-        ]),
-        head,
-    );
-
-    let shown = match (&app.out.a, &app.out.b) {
+    scr.frame(0, 1, w, QUERY_ROWS, " query: a word, or a claim A = B (Hebrew, or Michigan-Claremont ASCII) ");
+    let shown = match (&o.a, &o.b) {
         (a, Some(b)) => format!("   A = {a}   B = {b}"),
         (a, None) if !a.is_empty() => format!("   A = {a}"),
         _ => String::new(),
     };
-    f.render_widget(
-        Paragraph::new(Line::from(vec!["> ".bold(), Span::raw(app.input.clone()), "_".dim(), shown.cyan()]))
-            .block(Block::bordered().title(" query: a word, or a claim A = B (Hebrew, or Michigan-Claremont ASCII) ")),
-        query,
-    );
+    let inner = w.saturating_sub(2);
+    let x = scr.text(1, 2, inner, "> ", Style::BOLD);
+    let x = scr.text(x, 2, inner.saturating_sub(x - 1), &app.input, Style::PLAIN);
+    let x = scr.text(x, 2, inner.saturating_sub(x - 1), "_", Style::DIM);
+    scr.text(x, 2, inner.saturating_sub(x - 1), &shown, Style::fg(term::CYAN));
 
-    let [left, right] = Layout::horizontal([Constraint::Length(48), Constraint::Min(30)]).areas(body);
-    let values = Table::new(value_rows(app), [Constraint::Length(14), Constraint::Length(13), Constraint::Length(2), Constraint::Length(13)])
-        .header(Row::new(vec!["method", "A", "", "B"]).underlined())
-        .block(Block::bordered().title(" values (declared set in bold) "));
-    f.render_widget(values, left);
+    scr.frame(0, body_y, VALUES_WIDTH.min(w), body_rows, " values (declared set in bold) ");
+    for (&(col, width), title) in VALUE_COLS.iter().zip(["method", "A", "", "B"]) {
+        scr.text(col, body_y + 1, width, &format!("{title:<w$}", w = width as usize), Style::UNDERLINE);
+    }
+    let matching = o.claim.map(|c| c.matching).unwrap_or(0);
+    for m in 0..METHODS.min(body_rows.saturating_sub(3) as usize) {
+        let y = body_y + 2 + m as u16;
+        let style = if app.mask >> m & 1 == 1 { Style::BOLD } else { Style::DIM };
+        let cells = [
+            ffi::method_name(m),
+            o.va.map(|v| v[m].to_string()).unwrap_or_default(),
+            if matching >> m & 1 == 1 { "=".to_string() } else { String::new() },
+            o.vb.map(|v| v[m].to_string()).unwrap_or_default(),
+        ];
+        for (&(col, width), cell) in VALUE_COLS.iter().zip(&cells) {
+            scr.text(col, y, width, cell, style);
+        }
+    }
 
     // The Hebrew word is the LAST column: in a terminal that applies the
     // Unicode BiDi algorithm (Konsole), digits after a Hebrew run become
     // Arabic numbers (rule W2) and are reversed with it, swapping cells.
-    let rows: Vec<Row> = app
-        .out
-        .hits
-        .iter()
-        .map(|h| Row::new(vec![h.tokens.to_string(), h.first.clone(), h.word.clone()]))
-        .collect();
-    let title = match app.out.share {
+    let hits_x = VALUES_WIDTH;
+    let hits_w = w.saturating_sub(hits_x);
+    let title = match o.share {
         Some(s) => format!(" corpus types sharing a value with A: {} (most frequent first) ", s.share_types),
         None => " corpus types sharing a value with A ".to_string(),
     };
-    let hits = Table::new(rows, [Constraint::Length(7), Constraint::Length(13), Constraint::Min(12)])
-        .header(Row::new(vec!["tokens", "first", "word"]).underlined())
-        .block(Block::bordered().title(title));
-    f.render_widget(hits, right);
+    scr.frame(hits_x, body_y, hits_w, body_rows, &title);
+    let word_w = hits_w.saturating_sub(HIT_WORD_COL + 1);
+    for (&(col, width), title) in HIT_COLS.iter().zip(["tokens", "first"]) {
+        scr.text(hits_x + col, body_y + 1, width, &format!("{title:<w$}", w = width as usize), Style::UNDERLINE);
+    }
+    scr.text(hits_x + HIT_WORD_COL, body_y + 1, word_w, &format!("{:<w$}", "word", w = word_w as usize), Style::UNDERLINE);
+    for (row, hit) in o.hits.iter().take(body_rows.saturating_sub(3) as usize).enumerate() {
+        let y = body_y + 2 + row as u16;
+        scr.text(hits_x + HIT_COLS[0].0, y, HIT_COLS[0].1, &hit.tokens.to_string(), Style::PLAIN);
+        scr.text(hits_x + HIT_COLS[1].0, y, HIT_COLS[1].1, &hit.first, Style::PLAIN);
+        scr.text(hits_x + HIT_WORD_COL, y, word_w, &hit.word, Style::PLAIN);
+    }
 
-    let lines: Vec<Line> = verdict_lines(app).into_iter().map(|(s, t)| Line::styled(s, tone_style(t))).collect();
-    f.render_widget(
-        Paragraph::new(lines).block(Block::bordered().title(" claim auditor (PREREG-001, alpha 0.01; words only: no persons, events or dates) ")),
-        verdict,
-    );
-    f.render_widget(
-        Line::from(format!(" Tab: methods [{}]   F2: kolel   Ctrl-U: clear   Esc: quit", app.set_label())).dim(),
-        keys,
-    );
+    scr.frame(0, verdict_y, w, VERDICT_ROWS, " claim auditor (PREREG-001, alpha 0.01; words only: no persons, events or dates) ");
+    for (row, (line, tone)) in verdict_lines(app).into_iter().take((VERDICT_ROWS - 2) as usize).enumerate() {
+        scr.text(1, verdict_y + 1 + row as u16, inner, &line, tone_style(tone));
+    }
+    let keys = format!(" Tab: methods [{}]   F2: kolel   Ctrl-U: clear   Esc: quit", app.set_label());
+    scr.text(0, verdict_y + VERDICT_ROWS, w, &keys, Style::DIM);
+    scr.end()
 }
 
-fn run(terminal: &mut DefaultTerminal, app: &mut App) -> std::io::Result<()> {
+fn run(scr: &mut Screen, app: &mut App) -> std::io::Result<()> {
+    draw(scr, app)?;
     loop {
-        terminal.draw(|f| draw(f, app))?;
-        let Event::Key(k) = event::read()? else { continue };
-        if k.kind != KeyEventKind::Press {
-            continue;
-        }
-        let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
-        match k.code {
-            KeyCode::Esc => return Ok(()),
-            KeyCode::Char('c') if ctrl => return Ok(()),
-            KeyCode::Char('u') if ctrl => app.input.clear(),
-            KeyCode::Tab => app.mask = if app.mask == HECHRACHI { ALL } else { HECHRACHI },
-            KeyCode::F(2) => app.kolel = 1 - app.kolel,
-            KeyCode::Backspace => {
-                app.input.pop();
+        let keys = term::read_keys(250);
+        for key in &keys {
+            match *key {
+                Key::Esc | Key::CtrlC => return Ok(()),
+                Key::CtrlU => app.input.clear(),
+                Key::Tab => app.mask = if app.mask == HECHRACHI { ALL } else { HECHRACHI },
+                Key::F2 => app.kolel = 1 - app.kolel,
+                Key::Backspace => {
+                    app.input.pop();
+                }
+                Key::Char(c) => app.input.push(c),
             }
-            KeyCode::Char(c) if !ctrl => app.input.push(c),
-            _ => continue,
         }
-        app.compute();
+        if !keys.is_empty() {
+            app.compute();
+        }
+        if scr.resized() || !keys.is_empty() {
+            draw(scr, app)?;
+        }
     }
 }
 
@@ -311,9 +317,8 @@ fn main() -> ExitCode {
         print_once(&app);
         return ExitCode::SUCCESS;
     }
-    let mut terminal = ratatui::init();
-    let result = run(&mut terminal, &mut app);
-    ratatui::restore();
+    term::install_panic_restore();
+    let result = Screen::open().and_then(|mut screen| run(&mut screen, &mut app));
     match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {

@@ -2,11 +2,10 @@
 name = "gem-tui"
 version = "0.1.0"
 edition = "2024"
-description = "Terminal front end of the gematria claim auditor (links the C/C++ backend)"
+description = "Terminal front end of the gematria claim auditor (links the C/C++ backend; std only, no terminal crates)"
 publish = false
 
-[dependencies]
-ratatui = "0.30"
+# No dependencies: the terminal layer (raw mode, key decoding, drawing) is src/term.rs.
 
 [profile.release]
 lto = true
