@@ -56,6 +56,12 @@ public:
     // Kernel H: kernel R with an 8 KB L1-resident hashed prefilter in front of
     // the 4 MB bitmap (the bitmap is touched only on filter positives).
     ElsCount count_hashed(const std::vector<uint8_t> &L, unsigned dmin, unsigned dmax) const;
+    // Kernel A (AVX2): kernel S over 8 consecutive starts per step. Five
+    // contiguous 8-byte loads give the 8 keys, one multiply hashes them, one
+    // gather reads the 8 prefilter words; only prefilter positives reach the
+    // 4 MB bitmap. Needs a CPU with AVX2 (has_avx2()).
+    ElsCount count_avx2(const std::vector<uint8_t> &L, unsigned dmin, unsigned dmax) const;
+    static bool has_avx2();
 
     // Multiplicative hash of a 25-bit key to the prefilter's 16 bits.
     static uint32_t hash16(uint32_t key) { return (key * 0x9E3779B1u) >> 16; }
@@ -63,7 +69,8 @@ public:
 private:
     uint32_t multiplicity(uint32_t key) const;
     std::vector<uint64_t> bits_;
-    std::vector<uint64_t> filter_;  // 2^16 bits
+    std::vector<uint64_t> filter_;    // 2^16 bits
+    std::vector<uint32_t> filter32_;  // the same bits as 32-bit words, for the gather
     std::vector<std::pair<uint32_t, uint32_t>> mult_;  // sorted (key, multiplicity)
 };
 

@@ -2,10 +2,10 @@
 //
 // Usage:
 //   gem-els CORPUS find WORD BOOK [CH1 V1 CH2 V2] [DMAX]   list occurrences, 2 <= |d| <= DMAX (default 20)
-//   gem-els CORPUS bench [DMAX] [ROUNDS]                   A/B of kernels P, S, R on Genesis targets
+//   gem-els CORPUS bench [DMAX] [ROUNDS]                   A/B of kernels P, S, R, H, A on Genesis targets
 //   gem-els CORPUS export OUT.bin [REPS] [ref|noref|gen]   card A/B input; gen = replicates made on the device
 //   gem-els CORPUS rambsel                                 PREREG-004 part A
-//   gem-els CORPUS design [REPS] [KERNEL]                  PREREG-004 part B (KERNEL S, R or H)
+//   gem-els CORPUS design [REPS] [KERNEL]                  PREREG-004 part B (KERNEL S, R, H or A)
 #include "gem/els.hpp"
 #include "gem/stats.hpp"
 #include "../stats/rng.hpp"
@@ -169,6 +169,8 @@ int cmd_bench(const gem::Corpus &corpus, unsigned dmax, unsigned rounds)
         {"R rolling key, 4 MB bitmap", [&] { return table.count_rolling(L, 2, dmax); }, {}, {}},
         {"H rolling key, 8 KB prefilter", [&] { return table.count_hashed(L, 2, dmax); }, {}, {}},
     };
+    if (gem::Els5::has_avx2())
+        kernels.push_back({"A AVX2, 8 starts per step", [&] { return table.count_avx2(L, 2, dmax); }, {}, {}});
     for (unsigned k = 0; k < rounds; k++)
         for (Kernel &kern : kernels) {
             const auto t0 = Clock::now();
@@ -348,9 +350,12 @@ int cmd_design(const gem::Corpus &corpus, unsigned reps, char kernel, unsigned t
         const auto L = book_stream(c, b);
         const auto targets = book_targets(c, b);
         const gem::Els5 table(targets);
+        if (kernel == 'A' && !gem::Els5::has_avx2())
+            throw std::runtime_error("kernel A needs a CPU with AVX2");
         auto run = [&](const std::vector<uint8_t> &s) {
             return kernel == 'S'   ? table.count_streams(s, 2, 1000)
                    : kernel == 'H' ? table.count_hashed(s, 2, 1000)
+                   : kernel == 'A' ? table.count_avx2(s, 2, 1000)
                                    : table.count_rolling(s, 2, 1000);
         };
         const auto t0 = Clock::now();

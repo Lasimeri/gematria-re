@@ -33,6 +33,7 @@ build/gem-stat out/wlc.gemc r1 | r2 | r2b | cluster   # PREREG-001 / -002 / -003
 build/gem-stat out/wlc.gemc order                  # PREREG-005 letter-order test
 build/gem-stat out/wlc.gemc r2x | r2s | base       # exploratory diagnostics
 build/gem-els out/wlc.gemc rambsel | design | bench   # PREREG-004 parts A, B, kernel A/B
+build/gem-els out/wlc.gemc design 1000 A           # part B with the AVX2 kernel (R, S, H: scalar kernels)
 scripts/manifest.sh data/morphhb/wlc out/wlc.gemc | diff - prereg/wlc.manifest   # L0 hashes
 cd tui && cargo build --release && target/release/gem-tui
 ```
@@ -105,7 +106,8 @@ Timings are single runs unless a spread is given.
 | PREREG-004 A (Rambsel/Jeffrey) | ישועשמי at skip -20 from Isa 53:10 is present in WLC. P(at least one) in Isa 52:13-53:12 = 1 in 3,414; claimed 1 in 5e16. Over all of Isaiah (exploratory, the claim's own scope): it occurs once, and P(at least one) = 1 in 38 (same model, arithmetic). ישוע alone: observed 1, expected 0.661, p 0.605. |
 | PREREG-004 B (own words as ELS) | Genesis T 39,472 vs permutation null 39,819.3 +/- 207.2, z -1.68, p 0.957. Psalms control: z -0.64. No excess. |
 | ELS kernels (host, 1 thread, d 2..200) | Plain 4.918 s; 5-stream 0.0299 s; rolling key 0.0231 s; rolling + 8 KB prefilter **0.0187 s**. All counts identical. |
-| Xeon Phi 7120A, kernel V (vpermd register filter) | Exact counts on 1,001 texts, reproducing PREREG-004 B to the last digit. Same split over d: 11.68 vs 17.9 ms/text (1.53x). Batch mode with on-card permutation generation: 10.62 s per 1,001 texts. The best scalar host kernel (H, `-march=native`, one text per thread) takes 11.8 / 11.7 / 11.8 s, so the card wins the kernel **1.11x**. End-to-end with the card booted: about 11.3 s (single run) vs 11.9 s, **1.05x = a tie**. Cold boot adds 23.3 s (the host wins). An AVX2 host version of the lane kernel was not built: the card beats the best scalar host kernel, nothing more. |
+| Xeon Phi 7120A, kernel V (vpermd register filter) | Exact counts on 1,001 texts, reproducing PREREG-004 B to the last digit. Same split over d: 11.68 vs 17.9 ms/text (1.53x). Batch mode with on-card permutation generation: 10.62 s per 1,001 texts. The best scalar host kernel (H, `-march=native`, one text per thread) takes 11.8 / 11.7 / 11.8 s, so the card wins the kernel **1.11x**. End-to-end with the card booted: about 11.3 s (single run) vs 11.9 s, **1.05x = a tie**. Cold boot adds 23.3 s (the host wins). These figures are against the best scalar host kernel only; the row below is the vector rematch. |
+| AVX2 host kernel A, the rematch (2026-11-12; `results/prereg004-kernel-ab-avx2.txt`, `results/prereg004-partB-hostA.txt`) | Kernel A handles 8 consecutive starts per step: five contiguous 8-byte loads build 8 keys, one multiply hashes them, one gather reads the prefilter. Bench, 1 thread, d 2..200, 5 interleaved rounds: fastest 0.0098 s against H 0.0196 s (2.00x), medians 0.0120 s against 0.0214 s; counts identical (7,792). Full PREREG-004 B run, 1,000 permuted texts on 16 threads: **6.1 s** per 1,001 texts against 13.0 s for H in the same session (2.13x), every statistic identical to the frozen result. Against the card's recorded 10.62 s (2026-10-30, not rerun) the host is **1.74x faster**: the card's win held against scalar host code only. Single runs. |
 
 ### Stage K (2026-11-12, Ryzen 7 5800X, one thread)
 
