@@ -198,32 +198,39 @@ price; stage K reports a base rate where no test was preregistered.
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════════════════════╗
-║ DESKTOP HOST, CPU: Ryzen 7 5800X, one thread       ~/gematria-re stage K, pure C++23         ║
+║ DESKTOP HOST, CPU: Ryzen 7 5800X        ~/gematria-re, stage K and its closures, 2026-11-12  ║
 ║                                                                                              ║
 ║ ┌─ UTF-8 corpora ──────────┐    ┌─ gem::kab::Corpus ───────┐    ┌─ tables.hpp ─────────────┐ ║
-║ │ WLC text 2,926,720 B     │    │ strict UTF-8, 22.6 ms    │    │ 27 wchar_t rows x 4      │ ║
-║ │ (gem-export wlc.gemc)    │───▶│ 305,507 + 1,786 words    │◀───│ static_assert on rows    │ ║
-║ │ Sefer Yetzirah 15,949 B  │    │ 39,912 types: packed key │    │ siduri = katan + 9d      │ ║
-║ │ Sefaria, sha 574881ba    │    │ + 110-bit letter set     │    │ agree_swar 1.08x plain   │ ║
+║ │ WLC 304,850 letters      │    │ strict UTF-8, 22.6 ms    │    │ 27 wchar_t rows x 4      │ ║
+║ │ Koren 304,805 (McKay)    │───▶│ 39,615 WLC word types    │◀───│ static_assert on rows    │ ║
+║ │ MAM 304,801 (Sefaria)    │    │ packed 4-system key      │    │ siduri = katan + 9d      │ ║
+║ │ SY 755 + Gra 730 types   │    │ + 110-bit letter set     │    │ agree_swar 1.08x plain   │ ║
 ║ └──────────────────────────┘    └─────────────┬────────────┘    └──────────────────────────┘ ║
 ║               ┌───────────────────────────────┼───────────────────────────────┐              ║
 ║               ▼                               ▼                               ▼              ║
-║ ┌─ value indexes ──────────┐    ┌─ ValueGraph + census ────┐    ┌─ Vectors (.kvec) ────────┐ ║
-║ │ unordered_map<int,       │    │ CSR x 4 in 0.49 ms       │    │ 39,912 x 32 f32, 5.1 MB  │ ║
-║ │ vector<string>> x 4      │    │ 49,383,640 edges         │    │ unit norm, err 9.9e-08   │ ║
-║ │ words + 23,261 verses    │    │ 796,463,916 pairs        │    │ FNV-1a payload+lexicon   │ ║
-║ │ hechrachi 1 in 703.7     │    │ brute 1.22 s: 0 differ   │    │ scan_avx2 7.39x plain    │ ║
+║ ┌─ witness (layer L0) ─────┐    ┌─ ValueGraph + census ────┐    ┌─ Vectors (.kvec) ────────┐ ║
+║ │ Koren = 304,805 exact    │    │ CSR x 4 in 0.49 ms       │    │ 39,912 x 32 f32, 5.1 MB  │ ║
+║ │ WLC +45 in 136 sites     │    │ 796,463,916 pairs        │    │ unit norm, err 9.9e-08   │ ║
+║ │ MAM -4: 9 letter sites   │    │ all four: 103,310        │    │ FNV-1a payload+lexicon   │ ║
+║ │ tsadi 3,962 in all 3     │    │ H 9.51 bits, rest +3.41  │    │ scan_avx2 7.39x plain    │ ║
 ║ └──────────────────────────┘    └─────────────┬────────────┘    └─────────────┬────────────┘ ║
 ║                                               ▼                               ▼              ║
-║ ┌─ gem-kab dump: hash equalities, unordered_map<uint64_t, vector<uint32_t>> ───────────────┐ ║
+║ ┌─ gem-kab dump: hash equalities, a kind and a base rate on every row ─────────────────────┐ ║
 ║ │ all four agree, letters differ: 103,310 pairs = 1 in 7,709.1 (0.706 if independent)      │ ║
-║ │ inside Sefer Yetzirah (755 types): 524 hechrachi pairs = 1 in 543.2; 70 in all four      │ ║
+║ │ of those: mixed 99,119, units-only 4,141, single-letter 50; mixed pairs listed first     │ ║
+║ │ inside Sefer Yetzirah 524 hechrachi pairs, Gra version 467, in both recensions 336       │ ║
 ║ │ attested yayin = sod: hechrachi only, 1 in 727.3; Amalek = safek: 3 of 4, 1 in 3,160.5   │ ║
-║ │ out/kab/dump/matches-reference.tsv (524 rows), matches-all4.tsv (103,310 rows, 9.8 MB)   │ ║
 ║ └──────────────────────────────────────────────────────────────────────────────────────────┘ ║
 ║                                                                                              ║
-║ gem-kab-test: libgem (C core) as oracle, 22 of 22; 39,615 x 4 values equal; pointed Gen 1 ok ║
-║ bench, fastest of 5 rounds: sums 1.19x, agree 1.08x, CSR 9.63x, cosine 7.39x vs plain forms  ║
-║ exploratory: base rates only, no p-values; every run stored in results/exploratory-kab-*     ║
+║ ┌─ gem-tui (Rust, std) ────┐    ┌─ libgemstats (C++23) ────┐    ┌─ gem-els ────────────────┐ ║
+║ │ term.rs, no crates       │    │ 5 preregs, sha-checked   │    │ kernel A: AVX2 gather    │ ║
+║ │ A = B and A = 318        │◀───│ PREREG-005 p 0.4416      │───▶│ 6.1 s vs H 13.0 s        │ ║
+║ │ stage K line + base rate │    │ T 102,005 vs 137,323.5   │    │ card (10-30) 10.62 s     │ ║
+║ │ = gem-kab to the digit   │    │ r2s: null gap = the pool │    │ War+Peace z -0.06        │ ║
+║ └──────────────────────────┘    └──────────────────────────┘    └──────────────────────────┘ ║
+║                                                                                              ║
+║ gates: gem-kab-test 22/22 (C core as oracle), gem-selftest 24/24, pairs test 0 wrong         ║
+║ not done: the 1994 rabbis statistic; 64 strict forms untraced; card not rerun vs kernel A    ║
+║ public repository, branch main: every gate above is its own commit                           ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
