@@ -87,7 +87,8 @@ add_executable(gem-kab
   src/tools/kab_vectors.cpp
   src/tools/kab_graph.cpp
   src/tools/kab_dump.cpp
-  src/tools/kab_bench.cpp)
+  src/tools/kab_bench.cpp
+  src/tools/kab_witness.cpp)
 target_link_libraries(gem-kab PRIVATE gemkab)
 target_compile_options(gem-kab PRIVATE ${GEM_WARN})
 

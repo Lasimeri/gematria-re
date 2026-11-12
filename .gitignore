@@ -4,3 +4,5 @@ data/morphhb/
 tui/target/
 build-card/
 build-native/
+data/mam/raw/
+data/mam/*.txt

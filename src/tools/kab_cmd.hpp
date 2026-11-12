@@ -27,5 +27,6 @@ int cmd_verify(const gem::kab::Corpus &c, Args args);   // kab_graph.cpp
 int cmd_pair(const gem::kab::Corpus &c, Args args);     // kab_graph.cpp
 int cmd_dump(const gem::kab::Corpus &c, Args args);     // kab_dump.cpp
 int cmd_bench(const gem::kab::Corpus &c, Args args);    // kab_bench.cpp
+int cmd_witness(const gem::kab::Corpus &c, Args args);  // kab_witness.cpp
 
 }  // namespace kabtool

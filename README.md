@@ -54,6 +54,11 @@ $K verify                      # census by grouping against brute force over eve
 $K pair יין סוד                # one equality: agreement mask, bucket sizes, base rate
 $K dump out/kab/dump ref/attested.tsv   # matches to read by hand against the last corpus
 $K bench 5                     # each kernel against the plain form it replaces
+
+# second witness of the Torah (MAM, Aleppo tradition; the raw text is CC-BY-SA and is not committed)
+for b in Genesis:50 Exodus:40 Leviticus:27 Numbers:36 Deuteronomy:34; do sh scripts/fetch-mam.sh ${b%:*} ${b#*:} data/mam/raw; done
+sh scripts/mam-text.sh data/mam/raw data/mam/mam-torah.txt data/mam/MANIFEST    # compare the sha256
+build/gem-kab WLC=out/kab/wlc.txt MAM=data/mam/mam-torah.txt witness out/kab/witness-sites.tsv
 ```
 
 Corpus format: one verse per line, `reference<TAB>text`; the last corpus on
@@ -84,7 +89,7 @@ Timings are single runs unless a spread is given.
 | Stage | Result |
 |---|---|
 | S0 ingest | 39 books, 23,213 verses, 305,507 words, 1,197,042 letters; 0 violations, 0 unknown code points; 0.09 s. |
-| Torah | 304,850 letters: +45 against Ben Asher's 304,805, exactly the third-party Leningrad count 304,850. Vav +24, yod +34; tsadi -90 is unresolved. |
+| Torah | 304,850 letters: +45 against Ben Asher's 304,805, exactly the third-party Leningrad count 304,850. Vav +24, yod +34; tsadi -90 against the reference table (settled by the second witness, stage K below: the table is the outlier). |
 | Methods | 16, from Wikipedia "Gematria" (Cordovero list). Selftest 21/21, including Sanhedrin 38a and Yoma 20a. |
 | Claim yayin = sod | Hechrachi, K=0: 82 of 39,614 types also match, p = 0.0021, rare (1 DoF). 16 methods, K=+/-1: p = 0.354, chance (48 DoF). |
 | Auditor base rate (exploratory) | p is A's match share and does not depend on B: yayin = ken scores exactly like yayin = sod. Share of types with p < 0.01: 100.0 % under hechrachi K=0, 0.0 % under 16 methods K=+/-1. The verdict prices the declared method set, not the pair. |
@@ -114,6 +119,7 @@ prints is not verified here). Runs: `results/exploratory-kab-*`,
 | K3 vectors | 39,912 x 32 floats, unit length within 9.9e-08, 5,108,736 bytes, payload and lexicon hashed (a file from other corpora is refused). The nearest words by cosine are spelling neighbours and share no value: cosine and value equality are different relations. |
 | K4 pair census | Among 796,427,143 pairs of types with different letter multisets, 103,310 agree in all four systems (1 in 7,709.1); four independent systems with the same single rates would give 0.706 pairs (arithmetic). Given agreement in hechrachi, gadol agrees in 52.4 %, katan in 44.3 %, siduri in 30.0 % of pairs (unconditional: 0.094 %, 4.39 %, 1.56 %). Census by grouping (20.5 ms) against brute force over 796,463,916 pairs (1.22 s): 0 of 33 counts differ. As information (bits = -log2 of the share of pairs): hechrachi alone 9.51 bits; gadol, katan and siduri on top add 0.93 + 1.19 + 1.29 = 3.41 bits, where independent systems would add 20.57. |
 | K5 dump | Attested yayin = sod agrees in hechrachi only (1 in 727.3 pairs agree that much; 85 types carry 70); Amalek = safek agrees in 3 of 4 systems (1 in 3,160.5). Inside Sefer Yetzirah: 524 pairs of different words agree in hechrachi (1 in 543.2), 70 of them in all four. The head of the all-four list is single-letter arithmetic (alef-bet = gimel, 1 + 2 = 3): for the letters 1-9 the four systems are one system. Every pair therefore carries a kind, and "mixed" pairs are listed first: of the 103,310 all-four pairs 99,119 are mixed, 4,141 units-only, 50 single-letter; inside Sefer Yetzirah 464 mixed, 13 units-only, 47 single-letter. |
+| Second witness of the Torah (`results/exploratory-kab-witness.txt`, sites in `results/exploratory-kab-witness-sites.tsv`) | "Miqra according to the Masorah" (MAM, Aleppo Codex tradition, via Sefaria) against WLC (Leningrad Codex), written text only, aligned by chapter: 304,801 against 304,850 letters, delta -49. 132 sites in 84 of 187 chapters: 125 plene/defective (78 of -1, 33 of +1, 12 of 0, 2 of -2), 5 word divisions, and one chapter boundary (three words close Num 25:19 in WLC and open Num 26:1 in MAM). Every letter difference is a vav (-24) or a yod (-25): no other consonant differs anywhere in the Torah. Verses 5,846 against 5,853 (Decalogue versification and that boundary). Per book MAM is 1, 2, 0, 1, 0 letters below the traditional 78,064 / 63,529 / 44,790 / 63,530 / 54,892. The stage G1 anomaly "tsadi -90" is settled: both witnesses count 3,962 tsadi, the reference table says 4,052, so the outlier is the table. |
 | PREREG-005 letter order (frozen before its code; `results/prereg005-order.txt`) | Is the traditional letter order unusual in the four-system agreement it produces on the 39,615 WLC types? Against 1,000 random letter orders: T (pairs agreeing in all four) 102,005 vs 137,323.5 +/- 45,698.9 (60,177 to 456,130), p = 0.4416; T_H (hechrachi) 1,078,341 vs 1,286,791.8 +/- 296,374.8, p = 0.5255; T / T_H 0.0946 vs 0.1065, p = 0.6813. No signal. Gate met: both traditional counts equal the stage K census of the same lexicon. The expectation stated in the preregistration (above the median) was wrong in direction: 22.1 % of random orders give as few or fewer pairs. |
 | Kernels against their plain forms (5 interleaved rounds, ratio of the fastest rounds) | One packed add per letter 1.19x; SWAR agreement mask 1.08x; CSR counting sort 9.63x against `unordered_map<int, vector<string>>`; AVX2+FMA cosine scan 7.39x. Results identical in every pair; the ratios of medians moved between runs (1.09x to 1.44x for the packed add), the replacement was never the slower one. |
 

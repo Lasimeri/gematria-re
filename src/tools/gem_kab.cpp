@@ -62,6 +62,7 @@ constexpr Command kCommands[] = {
     {"pair", "A B: one equality, its agreement mask and its base rate", cmd_pair},
     {"dump", "OUTDIR [ATTESTED.tsv]: matches to read against the last corpus", cmd_dump},
     {"bench", "[ROUNDS]: each kernel against the plain form it replaces", cmd_bench},
+    {"witness", "[SITES.tsv]: letter-exact diff of the second corpus against the first", cmd_witness},
 };
 
 int usage()
