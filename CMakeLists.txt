@@ -69,3 +69,32 @@ target_compile_options(gem-els PRIVATE ${GEM_WARN})
 add_executable(gem-stat src/tools/gem_stat.cpp)
 target_link_libraries(gem-stat PRIVATE gemstats)
 target_compile_options(gem-stat PRIVATE ${GEM_WARN})
+
+# Stage K (pure C++, no link to the C core): hardcoded letter tables, UTF-8
+# corpora, value indexes. gem-export writes the GEMC witness as the UTF-8
+# text gem-kab loads.
+add_library(gemkab STATIC
+  src/kab/corpus.cpp
+  src/kab/vectors.cpp
+  src/kab/graph.cpp)
+target_include_directories(gemkab PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_compile_options(gemkab PRIVATE ${GEM_WARN})
+
+add_executable(gem-kab
+  src/tools/gem_kab.cpp
+  src/tools/kab_index.cpp
+  src/tools/kab_vectors.cpp
+  src/tools/kab_graph.cpp
+  src/tools/kab_dump.cpp
+  src/tools/kab_bench.cpp)
+target_link_libraries(gem-kab PRIVATE gemkab)
+target_compile_options(gem-kab PRIVATE ${GEM_WARN})
+
+add_executable(gem-export src/tools/gem_export.c)
+target_link_libraries(gem-export PRIVATE gem)
+target_compile_options(gem-export PRIVATE ${GEM_WARN})
+
+# The C core as the oracle of the C++ tables and loader.
+add_executable(gem-kab-test tests/kab_test.cpp)
+target_link_libraries(gem-kab-test PRIVATE gemkab gem)
+target_compile_options(gem-kab-test PRIVATE ${GEM_WARN})

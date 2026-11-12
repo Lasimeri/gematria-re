@@ -1,0 +1,14 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 23.7 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.1 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+word index, 39,912 types (unordered_map<int, vector<string>> per system):
+  hechrachi    1192 values (max    1640)  largest bucket   124 at 140          1,131,815 equal pairs = 1 in 703.7
+  gadol        1590 values (max    2030)  largest bucket    81 at 710            775,611 equal pairs = 1 in 1026.9
+  katan          51 values (max      52)  largest bucket  2490 at 19          35,025,071 equal pairs = 1 in 22.7
+  siduri        131 values (max     132)  largest bucket   896 at 53          12,451,143 equal pairs = 1 in 64.0
+verse index, 23,261 verses:
+  hechrachi    6548 values (max   74793)  largest bucket    72 at 895             51,572 equal pairs = 1 in 5245.6
+  gadol        9023 values (max  115463)  largest bucket    70 at 895             34,325 equal pairs = 1 in 7881.3
+  katan         510 values (max    3774)  largest bucket   168 at 102            999,002 equal pairs = 1 in 270.8
+  siduri       1290 values (max   11271)  largest bucket    72 at 166            347,018 equal pairs = 1 in 779.6

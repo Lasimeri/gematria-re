@@ -1,0 +1,6 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 28.0 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.2 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+vectors: 39,912 types x 32 floats = 5,108,736 bytes, built in 3.54 ms; largest |norm - 1| = 9.90e-08
+  out/kab/wlc-sy.kvec: payload fnv1a 81e7869ccafbb194, lexicon fnv1a 2f5043263b3aad25; reread identical

@@ -1,0 +1,14 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 31.5 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.2 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+bench: 5 interleaved rounds, one thread, median (min - max); 39,912 types, 307,293 tokens, 796,463,916 pairs
+  sums    4 lookups + 4 accumulators, x20       50.359 ms (47.764 - 57.850)
+          1 packed add per letter, x20          45.271 ms (40.056 - 48.418)   median 1.11x, fastest 1.19x, results identical
+  agree   agree_plain, all pairs               447.521 ms (420.199 - 468.821)
+          agree_swar, all pairs                413.660 ms (387.539 - 530.438)   median 1.08x, fastest 1.08x, results identical
+  index   unordered_map<int, vector<string>>     3.667 ms (3.311 - 13.474)
+          CSR counting sort                      0.370 ms (0.344 - 0.518)   median 9.90x, fastest 9.63x, results identical
+  cosine  scan_plain, 64 queries                27.321 ms (24.832 - 56.314)
+          scan_avx2, 64 queries                  3.892 ms (3.361 - 5.571)   median 7.02x, fastest 7.39x, results identical
+  cosine: largest |plain - avx2| over the last query = 1.19e-07

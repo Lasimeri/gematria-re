@@ -1,0 +1,38 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 22.9 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.1 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+shared-value graph, clique form (CSR per system), 39,912 types, built in 0.49 ms:
+  system     values  largest bucket           edges
+  hechrachi    1192             124       1,131,815
+  gadol        1590              81         775,611
+  katan          51            2490      35,025,071
+  siduri        131             896      12,451,143
+pair census by grouping (15 projections + Moebius inversion), 20.5 ms;
+mask letters: H hechrachi, G gadol, K katan, S siduri; a pair is counted under the exact set it agrees in:
+  mask    pairs (exact)   anagrams     other pairs  1 in N of the other pairs
+  ----      754,131,902          0     754,131,902  1.1
+  H---          223,439          0         223,439  3564.4
+  -G--          164,369          0         164,369  4845.4
+  HG--          227,022          0         227,022  3508.1
+  --K-       28,942,517          0      28,942,517  27.5
+  H-K-          166,853          0         166,853  4773.2
+  -GK-            7,988          0           7,988  99702.9
+  HGK-          148,683          0         148,683  5356.5
+  ---S        6,530,904          0       6,530,904  121.9
+  H--S           64,951          0          64,951  12262.0
+  -G-S            1,408          0           1,408  565644.3
+  HG-S           94,850          0          94,850  8396.7
+  --KS        5,551,302          0       5,551,302  143.5
+  H-KS           76,437     10,503          65,934  12079.2
+  -GKS            1,711          0           1,711  465474.7
+  HGKS          129,580     26,270         103,310  7709.1
+  all       796,463,916     36,773     796,427,143
+dependence between the systems (pairs with different letter multisets):
+  share agreeing in:        hechrachi        gadol        katan       siduri
+  all pairs                   0.1375%      0.0941%      4.3932%      1.5588%
+  given hechrachi           100.0000%     52.4058%     44.2704%     30.0486%
+  given gadol                76.5826%    100.0000%     34.9230%     26.8608%
+  given katan                 1.3855%      0.7479%    100.0000%     16.3548%
+  given siduri                2.6505%      1.6213%     46.0938%    100.0000%
+  agreeing in all four: 103,310 pairs observed; 0.706 expected if the systems were independent (arithmetic: product of the four shares x pairs); ratio 146428

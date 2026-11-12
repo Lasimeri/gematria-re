@@ -1,0 +1,11 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 22.6 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.1 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+census by grouping (21.2 ms) against brute force over 796,463,916 pairs (1.22 s): 0 of 33 counts differ
+  hechrachi graph edges       1,131,815  brute-force pairs       1,131,815  equal
+  gadol     graph edges         775,611  brute-force pairs         775,611  equal
+  katan     graph edges      35,025,071  brute-force pairs      35,025,071  equal
+  siduri    graph edges      12,451,143  brute-force pairs      12,451,143  equal
+  plain-kernel mask checksum 242,392,465, census-weighted sum 242,392,465  equal
+verify: all counts agree

@@ -1,0 +1,36 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 27.6 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.2 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+reference text SY: 755 word types, 297 of them absent from the other corpora
+attested equalities (2) and where they fall:
+  H--- (1 of 4 systems), 1 in 727.3 pairs agree that much; WLC / WLC+SY; Sanhedrin 38a, via Wikipedia "Gematria" (fetched 2026-10-30)  יין  סוד
+  HGK- (3 of 4 systems), 1 in 3160.5 pairs agree that much; WLC / WLC; Hasidic tradition, via Wikipedia "Gematria" (fetched 2026-10-30)  ספק  עמלק
+out/kab/dump/matches-reference.tsv: 524 pairs inside SY out of 284,635 (1 in 543.2; all corpora: 1 in 727.3); agreeing in 4 systems 70, 3 systems 139, 2 systems 193, hechrachi only 122
+  agree hechrachi  gadol katan siduri  cosine shared status   corpora           words
+  HGKS          3      3     3      3  0.2610      0 novel    WLC+SY   SY       אב  ג
+  HGKS          5      5     5      5  0.4918      0 novel    WLC+SY   WLC+SY   ה  בג
+  HGKS          7      7     7      7  0.5801      0 novel    WLC+SY   WLC+SY   בה  גד
+  HGKS          8      8     8      8  0.6434      0 novel    WLC+SY   WLC+SY   בו  אז
+  HGKS          7      7     7      7  0.6527      0 novel    WLC+SY   SY       בה  ז
+  HGKS          7      7     7      7  0.6527      0 novel    WLC+SY   SY       גד  ז
+  HGKS         12     12    12     12  0.6723      0 novel    WLC+SY   WLC+SY   הוא  חבב
+  HGKS          9      9     9      9  0.7037      0 novel    WLC+SY   SY       ואב  ט
+  HGKS         12     12    12     12  0.7047      0 novel    WLC+SY   WLC+SY   זה  חבב
+  HGKS          8      8     8      8  0.7098      0 novel    WLC+SY   SY       בו  ח
+  HGKS          8      8     8      8  0.7098      0 novel    WLC+SY   SY       אז  ח
+  HGKS         15     15     6     15  0.7543      1 novel    WLC+SY   WLC+SY   יה  גבי
+out/kab/dump/matches-all4.tsv: 103,310 pairs (census: 103,310); both words in SY 70, one word 4058, neither 99182
+  agree hechrachi  gadol katan siduri  cosine shared status   corpora           words
+  HGKS          3      3     3      3  0.2610      0 novel    WLC+SY   SY       אב  ג
+  HGKS        112    762    22     49  0.9802      2 novel    SY       SY       וכולן  והאמין
+  HGKS         90    650     9     36  0.9820      1 novel    WLC+SY   WLC+SY   מים  כלם
+  HGKS         47    607    11     20  0.9783      1 novel    WLC+SY   WLC+SY   ואם  בהם
+  HGKS          5      5     5      5  0.4918      0 novel    WLC+SY   WLC+SY   ה  בג
+  HGKS         15     15     6     15  0.7543      1 novel    WLC+SY   WLC+SY   יה  גבי
+  HGKS         91    651    19     46  0.9702      3 novel    WLC+SY   SY       האלהים  גבולים
+  HGKS         95    655    14     41  0.9879      3 novel    WLC+SY   SY       המים  מאדים
+  HGKS          7      7     7      7  0.5801      0 novel    WLC+SY   WLC+SY   בה  גד
+  HGKS          7      7     7      7  0.6527      0 novel    WLC+SY   SY       בה  ז
+  HGKS          7      7     7      7  0.6527      0 novel    WLC+SY   SY       גד  ז
+  HGKS        163    163    19     46  0.9293      1 novel    WLC+SY   SY       ונקבה  מענג

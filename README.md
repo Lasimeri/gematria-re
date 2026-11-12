@@ -10,6 +10,9 @@ Reverse-engineering gematria as a measurable system:
 
 C17 ingest and core, C++23 statistics, Rust TUI. The equidistant letter
 sequence (ELS) kernel also runs on the Xeon Phi 7120A's 512-bit vector unit.
+Stage K (`gem-kab`) is a second, self-contained implementation in pure C++:
+hardcoded letter tables, a UTF-8 corpus loader, offline vectors and the
+shared-value graph, with the C core as its oracle.
 
 Every result carries the preregistration it was frozen under (`prereg/`).
 Every statistics run verifies the corpus and all preregistrations by sha256.
@@ -32,6 +35,29 @@ build/gem-els out/wlc.gemc rambsel | design | bench   # PREREG-004 parts A, B, k
 scripts/manifest.sh data/morphhb/wlc out/wlc.gemc | diff - prereg/wlc.manifest   # L0 hashes
 cd tui && cargo build --release && target/release/gem-tui
 ```
+
+### Stage K (pure C++: tables, corpora, vectors, shared-value graph)
+
+```
+build/gem-export out/wlc.gemc out/kab/wlc.txt      # the witness as UTF-8, one verse per line
+sh scripts/fetch-sy.sh data/sy/sefer-yetzirah-warsaw1884.txt data/sy/MANIFEST   # Sefaria; compare the sha256
+sh scripts/pointed-gen1.sh data/morphhb/wlc/Gen.xml > out/kab/gen1-pointed.txt
+build/gem-kab-test out/kab/wlc.txt out/kab/gen1-pointed.txt     # C core as oracle, 22 checks
+K="build/gem-kab WLC=out/kab/wlc.txt SY=data/sy/sefer-yetzirah-warsaw1884.txt"
+$K index                       # unordered_map<int, vector<string>> per system, words and verses
+$K value hechrachi 70          # the words and verses with one value
+$K vectors out/kab/wlc-sy.kvec # offline float vectors (22 letter counts + 4 values), hash-checked
+$K near יין 10                 # nearest words by cosine
+$K graph                       # CSR graph per system, census of pairs by agreement mask
+$K verify                      # census by grouping against brute force over every pair
+$K pair יין סוד                # one equality: agreement mask, bucket sizes, base rate
+$K dump out/kab/dump ref/attested.tsv   # matches to read by hand against the last corpus
+$K bench 5                     # each kernel against the plain form it replaces
+```
+
+Corpus format: one verse per line, `reference<TAB>text`; the last corpus on
+the command line is the reference text of `dump`. `ref/attested.tsv` lists
+equalities already attested in the literature (word, word, source).
 
 ### Card (Xeon Phi 7120A)
 
@@ -69,9 +95,29 @@ Timings are single runs unless a spread is given.
 | ELS kernels (host, 1 thread, d 2..200) | Plain 4.918 s; 5-stream 0.0299 s; rolling key 0.0231 s; rolling + 8 KB prefilter **0.0187 s**. All counts identical. |
 | Xeon Phi 7120A, kernel V (vpermd register filter) | Exact counts on 1,001 texts, reproducing PREREG-004 B to the last digit. Same split over d: 11.68 vs 17.9 ms/text (1.53x). Batch mode with on-card permutation generation: 10.62 s per 1,001 texts. The best scalar host kernel (H, `-march=native`, one text per thread) takes 11.8 / 11.7 / 11.8 s, so the card wins the kernel **1.11x**. End-to-end with the card booted: about 11.3 s (single run) vs 11.9 s, **1.05x = a tie**. Cold boot adds 23.3 s (the host wins). An AVX2 host version of the lane kernel was not built: the card beats the best scalar host kernel, nothing more. |
 
+### Stage K (2026-11-12, Ryzen 7 5800X, one thread)
+
+Exploratory and descriptive: base rates, no p-values, no preregistration.
+Corpora: WLC (39,615 word types) and Sefer Yetzirah as Sefaria serves it
+("Sefer Yetzirah, Warsaw 1884", Public Domain; which recension that edition
+prints is not verified here). Runs: `results/exploratory-kab-*`,
+`results/kab-test.txt`.
+
+| Stage | Result |
+|---|---|
+| K1 tables | 27 `wchar_t`-keyed rows x 4 systems (hechrachi, gadol, katan, siduri), hardcoded. A `static_assert` regenerates every row from the definitions; a corrupted row does not compile. C core as oracle: 0 of 108 cells differ. |
+| Structure of the systems | Proved per letter at compile time: hechrachi = katan x 10^d and siduri = katan + 9d (d = 0, 1, 2 for units, tens, hundreds). So siduri = katan + 9 x (sum of d) for every word, hechrachi = katan mod 9, and gadol differs from hechrachi only on the five finals. |
+| K2 loader | The UTF-8 export of the witness loads to the frozen counts: 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 types, in 22.6 ms. 0 of 39,615 x 4 values and 0 of 39,615 x 22 letter counts differ from the C core. Pointed Genesis 1 from the OSHB source: 1,742 marks dropped, 104 Hebrew punctuation marks split words, 0 of 31 verses differ. |
+| Sefer Yetzirah | 48 mishnayot, 1,786 words, 6,738 letters, 755 word types, 297 of them absent from WLC. sha256 574881ba... (`data/sy/MANIFEST`). |
+| K2 value indexes (39,912 types) | Equal-valued pairs of word types: hechrachi 1 in 703.7, gadol 1 in 1,026.9, katan 1 in 22.7, siduri 1 in 64.0. Verses: the largest hechrachi bucket (72 verses at 895) is one sentence repeated verbatim. |
+| K3 vectors | 39,912 x 32 floats, unit length within 9.9e-08, 5,108,736 bytes, payload and lexicon hashed (a file from other corpora is refused). The nearest words by cosine are spelling neighbours and share no value: cosine and value equality are different relations. |
+| K4 pair census | Among 796,427,143 pairs of types with different letter multisets, 103,310 agree in all four systems (1 in 7,709.1); four independent systems with the same single rates would give 0.706 pairs (arithmetic). Given agreement in hechrachi, gadol agrees in 52.4 %, katan in 44.3 %, siduri in 30.0 % of pairs (unconditional: 0.094 %, 4.39 %, 1.56 %). Census by grouping (20.5 ms) against brute force over 796,463,916 pairs (1.22 s): 0 of 33 counts differ. |
+| K5 dump | Attested yayin = sod agrees in hechrachi only (1 in 727.3 pairs agree that much; 85 types carry 70); Amalek = safek agrees in 3 of 4 systems (1 in 3,160.5). Inside Sefer Yetzirah: 524 pairs of different words agree in hechrachi (1 in 543.2), 70 of them in all four. The head of the all-four list is single-letter arithmetic (alef-bet = gimel, 1 + 2 = 3): for the letters 1-9 the four systems are one system. |
+| Kernels against their plain forms (5 interleaved rounds, ratio of the fastest rounds) | One packed add per letter 1.19x; SWAR agreement mask 1.08x; CSR counting sort 9.63x against `unordered_map<int, vector<string>>`; AVX2+FMA cosine scan 7.39x. Results identical in every pair; the ratios of medians moved between runs (1.09x to 1.44x for the packed add), the replacement was never the slower one. |
+
 Out of scope by design: no decoding of persons, events or dates, and no
 prediction mode. A bare equality is never reported without its p and DoF
-price.
+price; stage K reports a base rate where no test was preregistered.
 
 ## Design
 
@@ -92,7 +138,7 @@ price.
 ║ └──────────────────────────┘   └──────────────────────────┘   └──────────────────────────┘   ║
 ║                                                                             ▼                ║
 ║ ┌─ Konsole (desktop) ──────┐   ┌─ gem-tui (Rust 2024) ────┐   ┌─ gemstat.h (C ABI) ──────┐   ║
-║ │ redraw on keystroke only │   │ ratatui 0.30, 0 clippy   │   │ no exception crosses     │   ║
+║ │ redraw on keystroke only │   │ std + termios, 0 clippy  │   │ no exception crosses     │   ║
 ║ │ verdict + base rate      │◀──│ Michigan-Claremont in    │◀──│ FFI = CLI to the digit   │   ║
 ║ │ Hebrew col. last (BiDi)  │   │ values, matches, p, DoF  │   │ 82 of 39,614: p 0.0021   │   ║
 ║ └──────────────────────────┘   └──────────────────────────┘   └──────────────────────────┘   ║
@@ -103,5 +149,39 @@ price.
 ║ PREREG-004 ELS: Rambsel phrase 1 in 3,414 (passage), 1 in 38 (Isaiah); claim 5e16; z -1.68   ║
 ║ auditor base rate: 100.0 % of types 'rare' (hechrachi K=0), 0.0 % (16 methods +/-1)          ║
 ║ card vs best scalar host: exact counts, kernel 1.11x, end-to-end 1.05x = tie (booted)        ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+```
+
+### Stage K
+
+```
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║ DESKTOP HOST, CPU: Ryzen 7 5800X, one thread       ~/gematria-re stage K, pure C++23         ║
+║                                                                                              ║
+║ ┌─ UTF-8 corpora ──────────┐    ┌─ gem::kab::Corpus ───────┐    ┌─ tables.hpp ─────────────┐ ║
+║ │ WLC text 2,926,720 B     │    │ strict UTF-8, 22.6 ms    │    │ 27 wchar_t rows x 4      │ ║
+║ │ (gem-export wlc.gemc)    │───▶│ 305,507 + 1,786 words    │◀───│ static_assert on rows    │ ║
+║ │ Sefer Yetzirah 15,949 B  │    │ 39,912 types: packed key │    │ siduri = katan + 9d      │ ║
+║ │ Sefaria, sha 574881ba    │    │ + 110-bit letter set     │    │ agree_swar 1.08x plain   │ ║
+║ └──────────────────────────┘    └─────────────┬────────────┘    └──────────────────────────┘ ║
+║               ┌───────────────────────────────┼───────────────────────────────┐              ║
+║               ▼                               ▼                               ▼              ║
+║ ┌─ value indexes ──────────┐    ┌─ ValueGraph + census ────┐    ┌─ Vectors (.kvec) ────────┐ ║
+║ │ unordered_map<int,       │    │ CSR x 4 in 0.49 ms       │    │ 39,912 x 32 f32, 5.1 MB  │ ║
+║ │ vector<string>> x 4      │    │ 49,383,640 edges         │    │ unit norm, err 9.9e-08   │ ║
+║ │ words + 23,261 verses    │    │ 796,463,916 pairs        │    │ FNV-1a payload+lexicon   │ ║
+║ │ hechrachi 1 in 703.7     │    │ brute 1.22 s: 0 differ   │    │ scan_avx2 7.39x plain    │ ║
+║ └──────────────────────────┘    └─────────────┬────────────┘    └─────────────┬────────────┘ ║
+║                                               ▼                               ▼              ║
+║ ┌─ gem-kab dump: hash equalities, unordered_map<uint64_t, vector<uint32_t>> ───────────────┐ ║
+║ │ all four agree, letters differ: 103,310 pairs = 1 in 7,709.1 (0.706 if independent)      │ ║
+║ │ inside Sefer Yetzirah (755 types): 524 hechrachi pairs = 1 in 543.2; 70 in all four      │ ║
+║ │ attested yayin = sod: hechrachi only, 1 in 727.3; Amalek = safek: 3 of 4, 1 in 3,160.5   │ ║
+║ │ out/kab/dump/matches-reference.tsv (524 rows), matches-all4.tsv (103,310 rows, 9.8 MB)   │ ║
+║ └──────────────────────────────────────────────────────────────────────────────────────────┘ ║
+║                                                                                              ║
+║ gem-kab-test: libgem (C core) as oracle, 22 of 22; 39,615 x 4 values equal; pointed Gen 1 ok ║
+║ bench, fastest of 5 rounds: sums 1.19x, agree 1.08x, CSR 9.63x, cosine 7.39x vs plain forms  ║
+║ exploratory: base rates only, no p-values; every run stored in results/exploratory-kab-*     ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 ```

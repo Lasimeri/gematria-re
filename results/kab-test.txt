@@ -1,0 +1,29 @@
+tables against the C core:
+  ok   rows, letter_value and packed lanes differing (108 cells)             0  (want 0)
+  ok   letter_value of a non-letter (U+05BE maqaf)                           0  (want 0)
+corpus against the frozen counts and the C core:
+  ok   verses (G1: 23,213)                                               23213  (want 23213)
+  ok   words (G1: 305,507)                                              305507  (want 305507)
+  ok   letters (G1: 1,197,042)                                         1197042  (want 1197042)
+  ok   word types (G3 lexicon: 39,615)                                   39615  (want 39615)
+  ok   marks + punctuation + ASCII + foreign + malformed + overlong            0  (want 0)
+  ok   types the C parser reads differently                                  0  (want 0)
+  ok   type values differing from gem_value (39,615 x 4)                     0  (want 0)
+  ok   letter counts differing from gem_letter_base (39,615 x 22)            0  (want 0)
+  ok   Torah verses (G1: 5,853)                                           5853  (want 5853)
+  ok   Torah hechrachi sum over verse sums (G2: 21,010,192)           21010192  (want 21010192)
+  ok   types with hechrachi 70 (G3: yayin + 82 others)                      83  (want 83)
+  ok   hechrachi pair collision, 1 in N (R1: 704)                          704  (want 704)
+       equal-valued pairs 1114585 of 784654305
+agree_swar against agree_plain:
+  ok   mismatches in 10,000,000 random pairs (all 16 masks forced)            0  (want 0)
+pointed Genesis 1 against the letters-only text:
+  ok   verses                                                               31  (want 31)
+  ok   foreign + malformed + overlong                                        0  (want 0)
+       dropped marks 1742, Hebrew punctuation 104, ASCII 0
+  ok   verses differing in reference, words or sums                          0  (want 0)
+  ok   marks dropped (must be > 0: 1 = yes)                                  1  (want 1)
+  ok   Gen 1:1 words                                                         7  (want 7)
+  ok   Gen 1:1 letters                                                      28  (want 28)
+  ok   Gen 1:1 hechrachi                                                  2701  (want 2701)
+kab test: 22 passed, 0 failed
