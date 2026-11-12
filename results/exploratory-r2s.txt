@@ -1,0 +1,5 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok, PREREG-004 0589ea9d5f1a ok, PREREG-005 823d7cf1a454 ok -> VERIFIED
+R2 SOURCE-POOL EXPLORATORY (not preregistered): nulls over the strict forms alone
+strict forms 59569 (source 59633), letters 212098 (source 212359), coverage 867 (source 867)
+M1 1000 replicates: 947.21 +/- 4.90, z -16.4 (source 946.91 +/- 4.87, z -16.4; ours over all letters 927.90 +/- 5.54)
+M2 300 replicates: 937.85 +/- 4.91, z -14.4 (source 938.15 +/- 5.07; ours over all letters 926.66 +/- 5.15)

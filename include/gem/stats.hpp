@@ -150,6 +150,16 @@ constexpr StrictVariant kPrereg002Strict{false, true};
 
 R2 run_r2(const gem_corpus &c, StrictVariant rule, unsigned m1_reps, unsigned m2_reps, unsigned threads);
 
+// EXPLORATORY: the R2 nulls built as the source's own code builds them,
+// from the strict forms alone (PREREG-002 strict rule): words and letters of
+// the strict forms, their coverage, and M1 / M2 over that pool.
+struct SourcePool {
+    uint32_t words = 0, letters = 0;
+    unsigned strict = 0;
+    NullRun m1, m2;
+};
+SourcePool run_r2_source_pool(const gem_corpus &c, unsigned m1_reps, unsigned m2_reps, unsigned threads);
+
 // PREREG-003: clustering of equal-valued words. One cell per scope x window
 // x K: observed S, exact null mean E, R = S / E; Q1 against M3 replicates;
 // Q2 against random letter-value tables.

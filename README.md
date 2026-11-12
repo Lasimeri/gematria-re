@@ -31,7 +31,7 @@ build/gem-pairs-test                               # PREREG-003 pair counter vs 
 build/gem-stat out/wlc.gemc claim יין סוד          # claim auditor (add "all 1" for 16 methods, K=+/-1)
 build/gem-stat out/wlc.gemc r1 | r2 | r2b | cluster   # PREREG-001 / -002 / -003
 build/gem-stat out/wlc.gemc order                  # PREREG-005 letter-order test
-build/gem-stat out/wlc.gemc r2x | base             # exploratory diagnostics
+build/gem-stat out/wlc.gemc r2x | r2s | base       # exploratory diagnostics
 build/gem-els out/wlc.gemc rambsel | design | bench   # PREREG-004 parts A, B, kernel A/B
 scripts/manifest.sh data/morphhb/wlc out/wlc.gemc | diff - prereg/wlc.manifest   # L0 hashes
 cd tui && cargo build --release && target/release/gem-tui
@@ -99,6 +99,7 @@ Timings are single runs unless a spread is given.
 | Auditor base rate (exploratory) | p is A's match share and does not depend on B: yayin = ken scores exactly like yayin = sod. Share of types with p < 0.01: 100.0 % under hechrachi K=0, 0.0 % under 16 methods K=+/-1. The verdict prices the declared method set, not the pair. |
 | R1 (gamatria.app analogue) | Pair collision 1 in 704 (source 692). 30 types share a value 46.5 % (45 %). Median match share 0.136 % (0.13 %), and 34.7 % with 16 methods (34.9 %). |
 | R2 (Pichkhadze) | Loose coverage 937, with all 13 missing values identical. PREREG-001's strict rule gives 907 (not replicated). PREREG-002's rule (suffixes stripped) gives 867, with all 56 missing values identical. Nulls 927.9 / 926.7 against 946.9 / 938.1: NOT MET. 0 of 1,300 replicates fall at or below the observed value. |
+| R2 null gap, explained (exploratory, `results/exploratory-r2s.txt`) | The source's code (Zenodo 10.5281/zenodo.22939702, `code/nullmodel.py`) permutes only the letters of the strict forms and fits its Markov chain on them; PREREG-001 and -002 defined both nulls over all Pentateuch letters, whose prefix and function-word letters pull the sums down. Run with the source's pool: M1 947.21 +/- 4.90 (source 946.91 +/- 4.87), z -16.4 (source -16.4); M2 937.85 +/- 4.91 (source 938.15 +/- 5.07). The preregistered verdict stays NOT MET; its cause is the pool. Residue: 59,569 strict forms and 212,098 letters here against 59,633 and 212,359 there (64 forms, 0.11 %), with identical coverage 867. |
 | PREREG-003 clustering | Do equal-valued, different words share verses beyond chance? Primary (Pentateuch, verse, K=0): S 1,110 vs exact E 1,109.7, R 1.000. Against 1,000 random value tables, p = 0.4755: no design signal. Secondary Q2: 0 of 7 significant. The K=+/-1 excess also appears under random tables (generic clustering); its Q1 p of 0.0010 in three cells is the floor of a 1,000-replicate test (1/1001), a bound and not a measured value. |
 | PREREG-004 A (Rambsel/Jeffrey) | ישועשמי at skip -20 from Isa 53:10 is present in WLC. P(at least one) in Isa 52:13-53:12 = 1 in 3,414; claimed 1 in 5e16. Over all of Isaiah (exploratory, the claim's own scope): it occurs once, and P(at least one) = 1 in 38 (same model, arithmetic). ישוע alone: observed 1, expected 0.661, p 0.605. |
 | PREREG-004 B (own words as ELS) | Genesis T 39,472 vs permutation null 39,819.3 +/- 207.2, z -1.68, p 0.957. Psalms control: z -0.64. No excess. |

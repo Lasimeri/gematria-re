@@ -294,6 +294,93 @@ R2 run_r2(const gem_corpus &c, StrictVariant rule, unsigned m1_reps, unsigned m2
     return r;
 }
 
+// EXPLORATORY. The source's own code (Zenodo 10.5281/zenodo.22939702,
+// code/nullmodel.py) builds its nulls from the strict forms alone: M1
+// permutes only their letters, M2 fits its Markov chain on them. PREREG-001
+// and -002 defined both over all Pentateuch letters. This runs the source's
+// definition on the PREREG-002 strict forms.
+SourcePool run_r2_source_pool(const gem_corpus &c, unsigned m1_reps, unsigned m2_reps, unsigned threads)
+{
+    const uint32_t *table = gem_letter_table(GEM_M_HECHRACHI);
+    struct Form {
+        uint32_t first, len;  // into pool
+    };
+    std::vector<uint8_t> pool;
+    std::vector<Form> forms;
+    for (const PWord &w : pentateuch_words(c, kPrereg002Strict)) {
+        const uint32_t core_end = w.len - w.suffix;
+        if (!w.content || w.prefix >= core_end)
+            continue;
+        forms.push_back({static_cast<uint32_t>(pool.size()), core_end - w.prefix});
+        pool.insert(pool.end(), c.letters + w.first + w.prefix, c.letters + w.first + core_end);
+    }
+    auto coverage_of = [&](const std::vector<uint8_t> &letters) {
+        Cover cover;
+        for (const Form &f : forms) {
+            uint64_t sum = 0;
+            for (uint32_t i = 0; i < f.len; i++)
+                sum += table[letters[f.first + i]];
+            if (sum <= 1000)
+                cover.set(sum);
+        }
+        return covered(cover);
+    };
+
+    SourcePool r;
+    r.words = static_cast<uint32_t>(forms.size());
+    r.letters = static_cast<uint32_t>(pool.size());
+    r.strict = coverage_of(pool);
+
+    std::vector<unsigned> m1(m1_reps);
+    auto t0 = Clock::now();
+    parallel_for(m1_reps, threads, [&](unsigned rep) {
+        Rng rng(replicate_seed(kSeed, 7, rep));
+        std::vector<uint8_t> perm = pool;
+        for (size_t i = perm.size() - 1; i > 0; i--)
+            std::swap(perm[i], perm[rng.below(i + 1)]);
+        m1[rep] = coverage_of(perm);
+    });
+    r.m1 = summarize(m1, r.strict, seconds_since(t0));
+
+    uint64_t init[GEM_BASE_LETTERS] = {}, trans[GEM_BASE_LETTERS][GEM_BASE_LETTERS] = {};
+    for (const Form &f : forms) {
+        uint8_t prev = gem_letter_base(pool[f.first]);
+        init[prev]++;
+        for (uint32_t i = 1; i < f.len; i++) {
+            uint8_t cur = gem_letter_base(pool[f.first + i]);
+            trans[prev][cur]++;
+            prev = cur;
+        }
+    }
+    auto draw = [](Rng &rng, const uint64_t *counts) {
+        uint64_t total = 0;
+        for (unsigned k = 0; k < GEM_BASE_LETTERS; k++)
+            total += counts[k];
+        uint64_t x = rng.below(total);
+        unsigned k = 0;
+        while (x >= counts[k])
+            x -= counts[k++];
+        return static_cast<uint8_t>(k);
+    };
+    std::vector<unsigned> m2(m2_reps);
+    t0 = Clock::now();
+    parallel_for(m2_reps, threads, [&](unsigned rep) {
+        Rng rng(replicate_seed(kSeed, 8, rep));
+        std::vector<uint8_t> gen(pool.size());
+        for (const Form &f : forms) {
+            uint8_t b = draw(rng, init);
+            gen[f.first] = gem_base_code(b);
+            for (uint32_t i = 1; i < f.len; i++) {
+                b = draw(rng, trans[b]);
+                gen[f.first + i] = gem_base_code(b);
+            }
+        }
+        m2[rep] = coverage_of(gen);
+    });
+    r.m2 = summarize(m2, r.strict, seconds_since(t0));
+    return r;
+}
+
 VariantCoverage strict_variant(const gem_corpus &c, StrictVariant v)
 {
     const uint32_t l_hi = c.books[4].first_letter + c.books[4].n_letters;

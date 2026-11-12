@@ -5,6 +5,7 @@
 //   gem-stat CORPUS r2 [M1 M2]               R2 under PREREG-001 (default 1000 300)
 //   gem-stat CORPUS r2b [M1 M2]              R2 under PREREG-002 (suffixes stripped)
 //   gem-stat CORPUS r2x                      EXPLORATORY strict-rule variants
+//   gem-stat CORPUS r2s [M1 M2]              EXPLORATORY R2 nulls over the strict forms alone
 //   gem-stat CORPUS base                     EXPLORATORY share of types the auditor calls rare
 //   gem-stat CORPUS cluster [TABLES REPS]    PREREG-003 clustering test (default 1000 1000)
 //   gem-stat CORPUS order [ORDERS]           PREREG-005 letter-order test (default 1000)
@@ -151,6 +152,23 @@ int cmd_cluster(const gem::Corpus &corpus, unsigned tables, unsigned reps, unsig
     return 0;
 }
 
+// EXPLORATORY: does the letter pool explain the gap between our R2 nulls and
+// the source's? The source permutes only the letters of the strict forms.
+int cmd_r2s(const gem::Corpus &corpus, unsigned m1, unsigned m2, unsigned threads)
+{
+    const gem::SourcePool r = gem::run_r2_source_pool(corpus.raw(), m1, m2, threads);
+    std::printf("R2 SOURCE-POOL EXPLORATORY (not preregistered): nulls over the strict forms alone\n");
+    std::printf("strict forms %u (source 59633), letters %u (source 212359), coverage %u (source 867)\n", r.words,
+                r.letters, r.strict);
+    std::printf("M1 %u replicates: %.2f +/- %.2f, z %.1f (source 946.91 +/- 4.87, z -16.4; ours over all letters "
+                "927.90 +/- 5.54)\n",
+                r.m1.replicates, r.m1.mean, r.m1.sd, r.m1.z);
+    std::printf("M2 %u replicates: %.2f +/- %.2f, z %.1f (source 938.15 +/- 5.07; ours over all letters 926.66 +/- "
+                "5.15)\n",
+                r.m2.replicates, r.m2.mean, r.m2.sd, r.m2.z);
+    return 0;
+}
+
 int cmd_order(const gem::Corpus &corpus, unsigned orders)
 {
     const gem::OrderResult r = gem::run_order(corpus.raw(), orders);
@@ -284,6 +302,9 @@ int main(int argc, char **argv)
         if (cmd == "cluster")
             return cmd_cluster(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
                                argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 1000u, threads);
+        if (cmd == "r2s")
+            return cmd_r2s(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
+                           argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 300u, threads);
         if (cmd == "order")
             return cmd_order(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u);
         if (cmd == "claim" && argc >= 5)
