@@ -14,6 +14,7 @@ extern "C" {
 #include <exception>
 #include <map>
 #include <new>
+#include <optional>
 #include <thread>
 #include <utility>
 
@@ -23,6 +24,7 @@ struct gemstat {
     std::string frozen;
     bool frozen_ok = false;
     std::map<std::pair<uint32_t, int>, double> base_rate;  // (mask, kolel) -> fraction of types with p < alpha
+    std::optional<gem::FourCensus> four;                   // computed on the first gemstat_get_four call
 
     explicit gemstat(const char *path)
         : corpus(path), lex(corpus.raw(), 0, corpus.raw().n_books - 1, gem::Rule::Loose)
@@ -181,6 +183,59 @@ long gemstat_matches(gemstat *g, const char *a, uint32_t mask, int kolel, gemsta
             copy(hits[i].ref, sizeof hits[i].ref, g->corpus.ref(g->lex.first_word(found[i])));
         }
         return static_cast<long>(n);
+    } catch (...) {
+        return -1;
+    }
+}
+
+int gemstat_audit_number(gemstat *g, const char *a, uint64_t n, uint32_t mask, int kolel, gemstat_claim *out)
+{
+    try {
+        std::vector<uint8_t> ca;
+        if (!parse(a, ca, nullptr))
+            return -1;
+        const gem::Values va = gem::all_values(ca);
+        // A word whose every value is n matches exactly the types that reach n.
+        gem::Values target;
+        target.fill(n);
+        std::memset(out, 0, sizeof *out);
+        for (unsigned m = 0; m < gem::kMethods; m++) {
+            if (!(mask >> m & 1u))
+                continue;
+            const uint64_t lo = n >= static_cast<uint64_t>(kolel) ? n - static_cast<uint64_t>(kolel) : 0;
+            if (va[m] >= lo && va[m] <= n + static_cast<uint64_t>(kolel))
+                out->matching |= 1u << m;
+        }
+        out->holds = out->matching != 0;
+        const int64_t self = g->lex.find(ca);
+        fill_share(g->lex, self, gem::match_share(g->lex, target, mask, kolel, self), mask, kolel, out);
+        return 0;
+    } catch (...) {
+        return -1;
+    }
+}
+
+int gemstat_get_four(gemstat *g, const char *a, const char *b, gemstat_four *out)
+{
+    try {
+        std::vector<uint8_t> ca, cb;
+        const bool has_b = b && *b;
+        if (!parse(a, ca, nullptr) || (has_b && !parse(b, cb, nullptr)))
+            return -1;
+        if (!g->four)
+            g->four = gem::four_census(g->lex);
+        const gem::FourKey ka = gem::four_key(ca), kb = has_b ? gem::four_key(cb) : gem::FourKey{};
+        std::memset(out, 0, sizeof *out);
+        for (unsigned s = 0; s < gem::kab::kSystems; s++) {
+            out->a[s] = gem::kab::lane(ka.key, static_cast<gem::kab::System>(s));
+            out->b[s] = gem::kab::lane(kb.key, static_cast<gem::kab::System>(s));
+        }
+        out->has_b = has_b;
+        out->agree = has_b ? gem::kab::agree_swar(ka.key, kb.key) : 0u;
+        out->anagram = has_b && ka.letters == kb.letters;
+        out->pairs = g->four->pairs;
+        out->pairs_as_much = g->four->at_least[out->agree];
+        return 0;
     } catch (...) {
         return -1;
     }

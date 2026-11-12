@@ -28,6 +28,20 @@ pub struct Claim {
     pub alpha: f64,
 }
 
+/// Stage K values and agreement in hechrachi, gadol, katan, siduri
+/// (struct gemstat_four).
+#[repr(C)]
+#[derive(Clone, Copy, Default, Debug)]
+pub struct Four {
+    pub a: [u32; 4],
+    pub b: [u32; 4],
+    pub agree: u32,
+    pub has_b: c_int,
+    pub anagram: c_int,
+    pub pairs_as_much: u64,
+    pub pairs: u64,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 struct RawHit {
@@ -64,6 +78,9 @@ unsafe extern "C" {
     fn gemstat_matches(g: *mut Gemstat, a: *const c_char, mask: u32, kolel: c_int, out: *mut Claim,
                        hits: *mut RawHit, cap: u32) -> c_long;
     fn gemstat_base_rate(g: *mut Gemstat, mask: u32, kolel: c_int) -> f64;
+    fn gemstat_audit_number(g: *mut Gemstat, a: *const c_char, n: u64, mask: u32, kolel: c_int,
+                            out: *mut Claim) -> c_int;
+    fn gemstat_get_four(g: *mut Gemstat, a: *const c_char, b: *const c_char, out: *mut Four) -> c_int;
 }
 
 fn text(buf: &[c_char]) -> String {
@@ -133,6 +150,25 @@ impl Engine {
     pub fn base_rate(&mut self, mask: u32, kolel: i32) -> Option<f64> {
         let r = unsafe { gemstat_base_rate(self.g, mask, kolel) };
         (r >= 0.0).then_some(r)
+    }
+
+    /// Number claim "a = n": the share counts the other corpus types that
+    /// reach n under (mask, kolel).
+    pub fn audit_number(&mut self, a: &str, n: u64, mask: u32, kolel: i32) -> Option<Claim> {
+        let ca = CString::new(a).ok()?;
+        let mut out = Claim::default();
+        let rc = unsafe { gemstat_audit_number(self.g, ca.as_ptr(), n, mask, kolel, &mut out) };
+        (rc == 0).then_some(out)
+    }
+
+    /// Four-system values of a, and with b their agreement and its base
+    /// rate (exploratory; the census is computed on the first call).
+    pub fn four(&mut self, a: &str, b: Option<&str>) -> Option<Four> {
+        let ca = CString::new(a).ok()?;
+        let cb = CString::new(b.unwrap_or("")).ok()?;
+        let mut out = Four::default();
+        let rc = unsafe { gemstat_get_four(self.g, ca.as_ptr(), cb.as_ptr(), &mut out) };
+        (rc == 0).then_some(out)
     }
 }
 

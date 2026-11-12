@@ -1,9 +1,11 @@
 //! gem-tui - terminal front end of the gematria claim auditor (PREREG-001).
 //!
-//! Type a Hebrew word (Hebrew letters or Michigan-Claremont ASCII), or a
-//! claim `A = B`. Every keystroke recomputes the values under the 16
-//! methods, the corpus word types sharing a value with A, and the claim
-//! verdict with its p and its price in degrees of freedom. Tab switches the
+//! Type a Hebrew word (Hebrew letters or Michigan-Claremont ASCII), a claim
+//! `A = B`, or a number claim `A = 318`. Every keystroke recomputes the
+//! values under the 16 methods, the corpus word types sharing a value with
+//! A, the claim verdict with its p and its price in degrees of freedom, and
+//! the stage K line: the agreement of A and B in hechrachi, gadol, katan and
+//! siduri with its base rate over the corpus. Tab switches the
 //! method set (hechrachi / all 16), F2 the kolel policy (K = 0 / +-1),
 //! Ctrl-U clears, Esc quits. The screen redraws only on input or when the
 //! terminal changes size. The terminal layer is src/term.rs (std and libc
@@ -15,7 +17,7 @@ mod ffi;
 mod term;
 mod translit;
 
-use ffi::{Claim, Engine, Hit, METHODS};
+use ffi::{Claim, Engine, Four, Hit, METHODS};
 use std::process::ExitCode;
 use term::{Key, Screen, Style};
 
@@ -32,6 +34,8 @@ struct Outcome {
     share: Option<Claim>,
     hits: Vec<Hit>,
     claim: Option<Claim>,
+    number: Option<u64>,
+    four: Option<Four>,
     base_rate: Option<f64>,
     error: Option<String>,
 }
@@ -61,8 +65,14 @@ fn evaluate(engine: &mut Engine, input: &str, mask: u32, kolel: i32) -> Outcome 
         Some((l, r)) => (l, Some(r)),
         None => (input, None),
     };
+    let right = right.map(str::trim).filter(|r| !r.is_empty());
     let mut out = Outcome { a: translit::to_hebrew(left.trim()), ..Outcome::default() };
-    out.b = right.map(|r| translit::to_hebrew(r.trim())).filter(|s| !s.is_empty());
+    // A right side of digits only is a number claim; anything else is a word.
+    out.number = right.filter(|r| r.bytes().all(|c| c.is_ascii_digit())).and_then(|r| r.parse().ok());
+    out.b = match out.number {
+        Some(n) => Some(n.to_string()),
+        None => right.map(translit::to_hebrew),
+    };
     if out.a.is_empty() {
         return out;
     }
@@ -76,14 +86,54 @@ fn evaluate(engine: &mut Engine, input: &str, mask: u32, kolel: i32) -> Outcome 
         out.hits = hits;
         out.base_rate = engine.base_rate(mask, kolel);
     }
-    if let Some(b) = out.b.clone() {
-        out.vb = ffi::values(&b);
-        match out.vb {
-            None => out.error = Some(format!("not Hebrew: {}", right.unwrap_or_default().trim())),
-            Some(_) => out.claim = engine.audit(&out.a, &b, mask, kolel),
+    match (out.number, out.b.clone()) {
+        (Some(n), _) => {
+            out.claim = engine.audit_number(&out.a, n, mask, kolel);
+            out.four = engine.four(&out.a, None);
         }
+        (None, Some(b)) => {
+            out.vb = ffi::values(&b);
+            match out.vb {
+                None => out.error = Some(format!("not Hebrew: {}", right.unwrap_or_default())),
+                Some(_) => {
+                    out.claim = engine.audit(&out.a, &b, mask, kolel);
+                    out.four = engine.four(&out.a, Some(&b));
+                }
+            }
+        }
+        (None, None) => out.four = engine.four(&out.a, None),
     }
     out
+}
+
+/// Agreement mask of the four systems as "HGKS" with '-' for a system that
+/// differs.
+fn mask_name(mask: u32) -> String {
+    "HGKS".chars().enumerate().map(|(s, c)| if mask >> s & 1 == 1 { c } else { '-' }).collect()
+}
+
+/// The stage K lines: the four values of A (and B), and what their
+/// agreement is worth over the corpus.
+fn four_lines(f: &Four) -> Vec<(String, Tone)> {
+    let list = |v: &[u32; 4]| format!("{} {} {} {}", v[0], v[1], v[2], v[3]);
+    let mut first = format!("four systems (hechrachi gadol katan siduri): A {}", list(&f.a));
+    if f.has_b == 0 {
+        return vec![(first, Tone::Note)];
+    }
+    first += &format!("   B {}", list(&f.b));
+    let second = if f.anagram != 0 {
+        "A and B are anagrams: hechrachi, katan and siduri agree by construction".to_string()
+    } else {
+        format!(
+            "agree {} ({} of 4): {} of {} pairs of different words agree that much = 1 in {:.1}",
+            mask_name(f.agree),
+            f.agree.count_ones(),
+            f.pairs_as_much,
+            f.pairs,
+            f.pairs as f64 / f.pairs_as_much as f64
+        )
+    };
+    vec![(first, Tone::Note), (second, Tone::Note)]
 }
 
 #[derive(Clone, Copy)]
@@ -105,10 +155,18 @@ fn verdict_lines(app: &App) -> Vec<(String, Tone)> {
         v.push(("type a word, or a claim A = B".into(), Tone::Note));
         return v;
     };
-    let p_line = format!(
-        "other corpus types matching A: {} of {}  ->  p = {:.4} (types), {:.4} (tokens)",
-        share.share_types, share.other_types, share.p_types, share.p_tokens
-    );
+    // A number claim is priced by the number (how many other words reach
+    // it); a word claim and a lone word by A's own match share.
+    let p_line = match (o.number, o.claim) {
+        (Some(n), Some(c)) => format!(
+            "other corpus types reaching {n}: {} of {}  ->  p = {:.4} (types), {:.4} (tokens)",
+            c.share_types, c.other_types, c.p_types, c.p_tokens
+        ),
+        _ => format!(
+            "other corpus types matching A: {} of {}  ->  p = {:.4} (types), {:.4} (tokens)",
+            share.share_types, share.other_types, share.p_types, share.p_tokens
+        ),
+    };
     let dof = format!("declared set: {}  ->  DoF price {}", app.set_label(), share.dof);
     match (o.claim, &o.b) {
         (Some(c), Some(_)) => {
@@ -135,16 +193,17 @@ fn verdict_lines(app: &App) -> Vec<(String, Tone)> {
             v.push((format!("a claimed equality with A under this set would be: {would}"), Tone::Note));
         }
     }
-    if let Some(r) = o.base_rate {
+    if o.number.is_some() {
+        v.push(("p depends on the number alone: it prices how many words reach it under this set".into(), Tone::Note));
+    } else if let Some(r) = o.base_rate {
         v.push((
             format!("base rate: {:.1} % of ALL corpus types score p < {} under this set", 100.0 * r, share.alpha),
             Tone::Note,
         ));
-        v.push((
-            "p depends on A alone: the verdict prices the method set, not the pair (pair test: PREREG-003, not built)"
-                .into(),
-            Tone::Note,
-        ));
+        v.push(("p depends on A alone: the verdict prices the method set, not the pair".into(), Tone::Note));
+    }
+    if let Some(f) = &o.four {
+        v.extend(four_lines(f));
     }
     v
 }
@@ -161,7 +220,7 @@ fn tone_style(t: Tone) -> Style {
 // Layout: head line, query box (3 rows), body (values left, matches right),
 // verdict box, key line. Column offsets inside the two tables.
 const QUERY_ROWS: u16 = 3;
-const VERDICT_ROWS: u16 = 8;
+const VERDICT_ROWS: u16 = 10;
 const BODY_MIN_ROWS: u16 = 12;
 const VALUES_WIDTH: u16 = 48;
 const VALUE_COLS: [(u16, u16); 4] = [(1, 14), (16, 13), (30, 2), (33, 13)];

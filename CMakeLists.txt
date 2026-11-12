@@ -49,6 +49,7 @@ add_library(gemstats STATIC
   src/stats/cluster.cpp
   src/stats/els.cpp
   src/stats/order.cpp
+  src/stats/four.cpp
   src/stats/capi.cpp)
 target_link_libraries(gemstats PUBLIC gem OpenSSL::Crypto)
 target_compile_options(gemstats PRIVATE ${GEM_WARN})

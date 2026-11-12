@@ -78,7 +78,10 @@ phi run /tmp/els-card /tmp/seed.bin 236 V 1 4      # 59 cores x 4 threads, vecto
 
 - Type Hebrew, or Michigan-Claremont ASCII (`)BGDHWZX+YKLMNS(PCQR&$T`; `A`
   also gives alef and `@` ayin).
-- `A = B` audits a claim.
+- `A = B` audits a claim; `A = 318` audits a number claim, priced by how
+  many other words reach the number.
+- Under the verdict, the stage K line gives the four values of A and B, the
+  systems they agree in, and the base rate of that much agreement.
 - Tab switches between hechrachi and all 16 methods; F2 toggles the kolel
   policy.
 

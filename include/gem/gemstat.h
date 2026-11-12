@@ -72,6 +72,31 @@ double gemstat_base_rate(gemstat *g, uint32_t mask, int kolel);
 long gemstat_matches(gemstat *g, const char *a, uint32_t mask, int kolel, struct gemstat_claim *out,
                      struct gemstat_hit *hits, uint32_t cap);
 
+/* Number claim "a = n": holds if a has the value n under a method of mask
+ * (within kolel). out is filled like gemstat_audit, except that the share
+ * counts the corpus types != a that also reach n: the price of a number
+ * claim depends on the number alone. Returns 0, or -1 if a is not Hebrew. */
+int gemstat_audit_number(gemstat *g, const char *a, uint64_t n, uint32_t mask, int kolel,
+                         struct gemstat_claim *out);
+
+/* The four systems of stage K (exploratory): hechrachi, gadol, katan,
+ * siduri, in that order, in a[] and b[] and as bits 0..3 of agree. */
+struct gemstat_four {
+    uint32_t a[4], b[4];     /* values of a and of b (b: zeros without a partner) */
+    uint32_t agree;          /* bit s set: a and b agree in system s */
+    int has_b;               /* a partner was given */
+    int anagram;             /* a and b have the same letters, finals folded */
+    uint64_t pairs_as_much;  /* corpus type pairs with different letters agreeing in at least `agree` */
+    uint64_t pairs;          /* corpus type pairs with different letters */
+};
+
+/* Four-system values of a, and with b (may be NULL or empty) their agreement
+ * and its base rate over the corpus. The census is computed on the first
+ * call and kept. Returns 0, or -1 if a or b is not Hebrew or longer than 31
+ * letters. (Named get_four: in C++ a function cannot share the name of the
+ * struct.) */
+int gemstat_get_four(gemstat *g, const char *a, const char *b, struct gemstat_four *out);
+
 #ifdef __cplusplus
 }
 #endif

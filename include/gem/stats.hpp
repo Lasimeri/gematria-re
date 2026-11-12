@@ -9,6 +9,8 @@ extern "C" {
 #include "gem/methods.h"
 }
 
+#include "gem/kab/tables.hpp"
+
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -177,6 +179,22 @@ struct OrderResult {
     double seconds = 0;
 };
 OrderResult run_order(const gem_corpus &c, unsigned orders);
+
+// EXPLORATORY: the four systems of stage K over the auditor's lexicon.
+// FourKey: a word's packed key (kab/tables.hpp) and its letter multiset.
+// FourCensus: the pairs of types with different letter multisets
+// (pairs), and of those the pairs agreeing in at least the systems of each
+// 4-bit mask (bit 0 hechrachi, 1 gadol, 2 katan, 3 siduri).
+struct FourKey {
+    uint64_t key = 0;
+    kab::Multiset letters;
+};
+FourKey four_key(std::span<const uint8_t> codes);  // throws std::length_error above 31 letters
+struct FourCensus {
+    uint64_t pairs = 0;
+    std::array<uint64_t, 1u << kab::kSystems> at_least{};
+};
+FourCensus four_census(const Lexicon &lex);
 
 // EXPLORATORY (not preregistered): strict coverage of any variant, to locate
 // the cause of a mismatch with the source; never a replacement result.
