@@ -1,0 +1,40 @@
+corpus WLC (out/kab/wlc.txt): 2,926,720 bytes, 23,213 verses, 305,507 words, 1,197,042 letters, 39,615 new types, 50.3 ms
+  dropped marks 0; separators: Hebrew punctuation 0, ASCII 0, foreign 0, malformed 0; overlong words 0
+corpus SY (data/sy/sefer-yetzirah-warsaw1884.txt): 15,949 bytes, 48 verses, 1,786 words, 6,738 letters, 297 new types, 0.4 ms
+  dropped marks 7; separators: Hebrew punctuation 0, ASCII 301, foreign 0, malformed 0; overlong words 0
+corpus GRA (data/sy/sefer-yetzirah-gra-warsaw1884.txt): 18,000 bytes, 62 verses, 2,015 words, 7,565 letters, 71 new types, 0.3 ms
+  dropped marks 2; separators: Hebrew punctuation 0, ASCII 355, foreign 0, malformed 0; overlong words 0
+reference text GRA: 730 word types, 71 of them absent from the other corpora
+attested equalities (2) and where they fall:
+  H--- (1 of 4 systems), 1 in 727.3 pairs agree that much; WLC / WLC+SY+GRA; Sanhedrin 38a, via Wikipedia "Gematria" (fetched 2026-10-30)  יין  סוד
+  HGK- (3 of 4 systems), 1 in 3162.4 pairs agree that much; WLC / WLC; Hasidic tradition, via Wikipedia "Gematria" (fetched 2026-10-30)  ספק  עמלק
+out/kab/dump-gra/matches-reference.tsv: 467 pairs inside GRA out of 266,085 (1 in 569.8; all corpora: 1 in 727.3); agreeing in 4 systems 64, 3 systems 131, 2 systems 175, hechrachi only 97
+  kinds: mixed 416, units-only 12, single-letter 39
+  agree hechrachi  gadol katan siduri  cosine shared kind          status   corpora           words
+  HGKS         15     15     6     15  0.7543      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA יה  גבי
+  HGKS         17     17     8     17  0.7621      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA גדי  ביה
+  HGKS         17     17     8     17  0.7621      1 mixed         novel    WLC+SY+GRA SY+GRA   גדי  בהי
+  HGKS         72     72    18     36  0.8123      0 mixed         novel    WLC+SY+GRA GRA      וגלגל  מזכה
+  HGKS         37     37    10     19  0.8208      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA ולא  הלב
+  HGKS         37     37    10     19  0.8208      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA ואל  הלב
+  HGKS         37     37    10     19  0.8208      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA אלו  הלב
+  HGKS         73     73    19     37  0.8245      0 mixed         novel    WLC+SY+GRA WLC+SY+GRA חכמה  ואלול
+  HGKS         18     18     9     18  0.8348      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA חי  בוי
+  HGKS         18     18     9     18  0.8348      1 mixed         novel    WLC+SY+GRA SY+GRA   חי  ביו
+  HGKS         87     87    15     33  0.8485      0 mixed         novel    WLC+SY+GRA WLC+SY+GRA לבנה  כסאו
+  HGKS         67     67    13     31  0.8669      2 mixed         novel    SY+GRA   SY+GRA   אינו  אלול
+out/kab/dump-gra/matches-all4.tsv: 103,649 pairs (census: 103,649); both words in GRA 64, one word 4054, neither 99531
+  kinds: mixed 99,453, units-only 4,145, single-letter 51
+  agree hechrachi  gadol katan siduri  cosine shared kind          status   corpora           words
+  HGKS         47    607    11     20  0.9783      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA ואם  בהם
+  HGKS        170    820    17     53  0.9870      2 mixed         novel    WLC+SY+GRA GRA      ניסן  ודקין
+  HGKS         64    714    19     28  0.9892      2 mixed         novel    WLC+GRA  WLC+SY+GRA וחן  ואזן
+  HGKS        161    721    17     53  0.9843      3 mixed         novel    WLC+SY+GRA GRA      אלפים  אדוקים
+  HGKS         61    711    16     25  0.9885      2 mixed         novel    WLC+GRA  WLC+SY+GRA והן  אדון
+  HGKS         15     15     6     15  0.7543      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA יה  גבי
+  HGKS         95    655    14     41  0.9879      3 mixed         novel    WLC+SY+GRA SY+GRA   המים  מאדים
+  HGKS        163    163    19     46  0.9293      1 mixed         novel    WLC+SY+GRA SY+GRA   ונקבה  מענג
+  HGKS        163    163    19     46  0.9293      1 mixed         novel    WLC+SY+GRA SY+GRA   ונקבה  מנגע
+  HGKS        415    415    19     55  0.9791      2 mixed         novel    WLC+SY+GRA SY+GRA   מעשה  הקודש
+  HGKS        300    300    12     48  0.9699      1 mixed         novel    WLC+SY+GRA WLC+SY+GRA יצר  כפר
+  HGKS        348    348    15     42  0.9813      2 mixed         novel    WLC+SY+GRA WLC+SY+GRA חמש  בשמו
