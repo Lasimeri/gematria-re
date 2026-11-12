@@ -1,0 +1,4 @@
+CONTROL EXPLORATORY (not preregistered): the 135 Genesis targets of part B as ELS in data/koren/WNP.txt, 2 <= d <= 1000 both directions, kernel A, 1000 letter permutations
+78064 letters: T = 35434 (bands 325 / 3220 / 31889), permuted mean 35445.5 sd 199.8, z -0.06, p = 0.5095  [6.1 s]
+CONTROL EXPLORATORY (not preregistered): the 135 Genesis targets of part B as ELS in data/koren/genesis.koren, 2 <= d <= 1000 both directions, kernel A, 1000 letter permutations
+78064 letters: T = 39416 (bands 357 / 3502 / 35557), permuted mean 39807.5 sd 211.1, z -1.85, p = 0.9600  [6.2 s]

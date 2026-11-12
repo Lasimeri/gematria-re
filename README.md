@@ -34,6 +34,7 @@ build/gem-stat out/wlc.gemc order                  # PREREG-005 letter-order tes
 build/gem-stat out/wlc.gemc r2x | r2s | base       # exploratory diagnostics
 build/gem-els out/wlc.gemc rambsel | design | bench   # PREREG-004 parts A, B, kernel A/B
 build/gem-els out/wlc.gemc design 1000 A           # part B with the AVX2 kernel (R, S, H: scalar kernels)
+build/gem-els out/wlc.gemc control data/koren/WNP.txt   # exploratory control (needs scripts/koren-text.sh, below)
 scripts/manifest.sh data/morphhb/wlc out/wlc.gemc | diff - prereg/wlc.manifest   # L0 hashes
 cd tui && cargo build --release && target/release/gem-tui
 ```
@@ -110,6 +111,7 @@ Timings are single runs unless a spread is given.
 | PREREG-003 clustering | Do equal-valued, different words share verses beyond chance? Primary (Pentateuch, verse, K=0): S 1,110 vs exact E 1,109.7, R 1.000. Against 1,000 random value tables, p = 0.4755: no design signal. Secondary Q2: 0 of 7 significant. The K=+/-1 excess also appears under random tables (generic clustering); its Q1 p of 0.0010 in three cells is the floor of a 1,000-replicate test (1/1001), a bound and not a measured value. |
 | PREREG-004 A (Rambsel/Jeffrey) | ישועשמי at skip -20 from Isa 53:10 is present in WLC. P(at least one) in Isa 52:13-53:12 = 1 in 3,414; claimed 1 in 5e16. Over all of Isaiah (exploratory, the claim's own scope): it occurs once, and P(at least one) = 1 in 38 (same model, arithmetic). ישוע alone: observed 1, expected 0.661, p 0.605. |
 | PREREG-004 B (own words as ELS) | Genesis T 39,472 vs permutation null 39,819.3 +/- 207.2, z -1.68, p 0.957. Psalms control: z -0.64. No excess. |
+| ELS control texts (exploratory, `results/exploratory-els-control.txt`) | The 135 Genesis targets of part B counted in other letter streams of 78,064 letters, each against 1,000 of its own letter permutations. Hebrew War and Peace: T 35,434 vs 35,445.5 +/- 199.8, z -0.06, p 0.5095. Koren Genesis (the text of the 1994 codes paper): T 39,416 vs 39,807.5 +/- 211.1, z -1.85, p 0.9600. Genesis's own words occur as ELS in Genesis slightly less often than in shuffled Genesis, in both witnesses; War and Peace sits on its shuffled mean. |
 | ELS kernels (host, 1 thread, d 2..200) | Plain 4.918 s; 5-stream 0.0299 s; rolling key 0.0231 s; rolling + 8 KB prefilter **0.0187 s**. All counts identical. |
 | Xeon Phi 7120A, kernel V (vpermd register filter) | Exact counts on 1,001 texts, reproducing PREREG-004 B to the last digit. Same split over d: 11.68 vs 17.9 ms/text (1.53x). Batch mode with on-card permutation generation: 10.62 s per 1,001 texts. The best scalar host kernel (H, `-march=native`, one text per thread) takes 11.8 / 11.7 / 11.8 s, so the card wins the kernel **1.11x**. End-to-end with the card booted: about 11.3 s (single run) vs 11.9 s, **1.05x = a tie**. Cold boot adds 23.3 s (the host wins). These figures are against the best scalar host kernel only; the row below is the vector rematch. |
 | AVX2 host kernel A, the rematch (2026-11-12; `results/prereg004-kernel-ab-avx2.txt`, `results/prereg004-partB-hostA.txt`) | Kernel A handles 8 consecutive starts per step: five contiguous 8-byte loads build 8 keys, one multiply hashes them, one gather reads the prefilter. Bench, 1 thread, d 2..200, 5 interleaved rounds: fastest 0.0098 s against H 0.0196 s (2.00x), medians 0.0120 s against 0.0214 s; counts identical (7,792). Full PREREG-004 B run, 1,000 permuted texts on 16 threads: **6.1 s** per 1,001 texts against 13.0 s for H in the same session (2.13x), every statistic identical to the frozen result. Against the card's recorded 10.62 s (2026-10-30, not rerun) the host is **1.74x faster**: the card's win held against scalar host code only. Single runs. |
@@ -141,6 +143,23 @@ prints is not verified here). Runs: `results/exploratory-kab-*`,
 Out of scope by design: no decoding of persons, events or dates, and no
 prediction mode. A bare equality is never reported without its p and DoF
 price; stage K reports a base rate where no test was preregistered.
+
+### Not done
+
+- **The rabbis experiment of Witztum, Rips and Rosenberg (1994) is not
+  rerun.** Their text (the Koren Genesis) and the War and Peace control are
+  in hand and are used above, but their statistic (the corrected distance
+  c(w, w') over cylinder row lengths with 125 perturbations, the P1..P4
+  aggregates, the permutation test over 999,999 matchings) is not
+  implemented here. McKay, Bar-Natan, Bar-Hillel and Kalai (1999) remains
+  the test of that claim; what this repository adds is PREREG-004 and the
+  controls.
+- The 64 strict forms (0.11 %) by which this strict rule differs from the
+  source's, with identical coverage, are not traced.
+- The Xeon Phi figures are from 2026-10-30; the card was not rerun against
+  the AVX2 host kernel.
+- Layers L3 (the trees as graphs), L4 (provenance, stylometry) and L6 of the
+  design framework are outside this repository.
 
 ## Design
 

@@ -6,6 +6,7 @@
 //   gem-els CORPUS export OUT.bin [REPS] [ref|noref|gen]   card A/B input; gen = replicates made on the device
 //   gem-els CORPUS rambsel                                 PREREG-004 part A
 //   gem-els CORPUS design [REPS] [KERNEL]                  PREREG-004 part B (KERNEL S, R, H or A)
+//   gem-els CORPUS control TEXT.mc [REPS]                  EXPLORATORY: the Genesis targets in another letter stream
 #include "gem/els.hpp"
 #include "gem/stats.hpp"
 #include "../stats/rng.hpp"
@@ -20,6 +21,7 @@ extern "C" {
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
 #include <functional>
 #include <map>
 #include <stdexcept>
@@ -386,12 +388,64 @@ int cmd_design(const gem::Corpus &corpus, unsigned reps, char kernel, unsigned t
     return 0;
 }
 
+// EXPLORATORY control: the Genesis targets of part B counted as ELS in any
+// letter stream given in Michigan-Claremont transliteration (everything that
+// is not one of its 22 letters is skipped), against letter permutations of
+// that stream. Used with the first 78,064 letters of the Hebrew War and
+// Peace and with the Koren Genesis.
+int cmd_control(const gem::Corpus &corpus, const char *path, unsigned reps, unsigned threads)
+{
+    static const char mc[] = ")BGDHWZX+YKLMNS(PCQR$T";
+    std::ifstream in(path, std::ios::binary);
+    if (!in)
+        throw std::runtime_error(std::string("cannot read ") + path);
+    std::vector<uint8_t> L;
+    for (char ch; in.get(ch);)
+        if (const char *at = ch ? std::strchr(mc, ch) : nullptr)
+            L.push_back(static_cast<uint8_t>(at - mc));
+
+    const gem_corpus &c = corpus.raw();
+    const auto targets = book_targets(c, 0);
+    const gem::Els5 table(targets);
+    const bool avx2 = gem::Els5::has_avx2();
+    auto run = [&](const std::vector<uint8_t> &s) {
+        return avx2 ? table.count_avx2(s, 2, 1000) : table.count_hashed(s, 2, 1000);
+    };
+    const auto t0 = Clock::now();
+    const gem::ElsCount obs = run(L);
+    std::vector<uint64_t> rep(reps);
+    parallel_for(reps, threads, [&](unsigned r) {
+        gem::Rng rng(gem::replicate_seed(gem::kSeed, 10, r));
+        auto perm = L;
+        shuffle(perm, rng);
+        rep[r] = run(perm).total;
+    });
+    double m = 0, ss = 0;
+    unsigned ge = 0;
+    for (uint64_t x : rep) {
+        m += static_cast<double>(x);
+        ss += static_cast<double>(x) * static_cast<double>(x);
+        ge += x >= obs.total;
+    }
+    m /= reps;
+    const double sd = std::sqrt(std::max(0.0, (ss - m * m * reps) / (reps - 1)));
+    std::printf("CONTROL EXPLORATORY (not preregistered): the %zu Genesis targets of part B as ELS in %s, "
+                "2 <= d <= 1000 both directions, kernel %c, %u letter permutations\n",
+                targets.size(), path, avx2 ? 'A' : 'H', reps);
+    std::printf("%zu letters: T = %llu (bands %llu / %llu / %llu), permuted mean %.1f sd %.1f, z %+.2f, p = %.4f  "
+                "[%.1f s]\n",
+                L.size(), static_cast<unsigned long long>(obs.total), static_cast<unsigned long long>(obs.band[0]),
+                static_cast<unsigned long long>(obs.band[1]), static_cast<unsigned long long>(obs.band[2]), m, sd,
+                sd > 0 ? (obs.total - m) / sd : 0.0, (1.0 + ge) / (1.0 + reps), since(t0));
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char **argv)
 {
     if (argc < 3) {
-        std::fprintf(stderr, "usage: %s CORPUS find|bench|rambsel|design ...\n", argv[0]);
+        std::fprintf(stderr, "usage: %s CORPUS find|bench|rambsel|design|control ...\n", argv[0]);
         return 2;
     }
     try {
@@ -412,6 +466,9 @@ int main(int argc, char **argv)
         if (cmd == "design")
             return cmd_design(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
                               argc > 4 ? argv[4][0] : 'R', threads);
+        if (cmd == "control" && argc >= 4)
+            return cmd_control(corpus, argv[3], argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 1000u,
+                               threads);
         std::fprintf(stderr, "bad command\n");
         return 2;
     } catch (const std::exception &e) {
