@@ -7,6 +7,7 @@
 //   gem-stat CORPUS r2x                      EXPLORATORY strict-rule variants
 //   gem-stat CORPUS base                     EXPLORATORY share of types the auditor calls rare
 //   gem-stat CORPUS cluster [TABLES REPS]    PREREG-003 clustering test (default 1000 1000)
+//   gem-stat CORPUS order [ORDERS]           PREREG-005 letter-order test (default 1000)
 //   gem-stat CORPUS claim A B [METHODS] [K]  claim auditor; METHODS = name,name|all
 //   gem-stat CORPUS word A [METHODS] [K]     values of A and its matching corpus types
 //
@@ -150,6 +151,23 @@ int cmd_cluster(const gem::Corpus &corpus, unsigned tables, unsigned reps, unsig
     return 0;
 }
 
+int cmd_order(const gem::Corpus &corpus, unsigned orders)
+{
+    const gem::OrderResult r = gem::run_order(corpus.raw(), orders);
+    std::printf("PREREG-005 four-system agreement under the traditional and %u random letter orders (%u types, %.1f s)\n",
+                r.orders, r.types, r.seconds);
+    std::printf("%-4s %14s | %14s %12s %14s %14s | %7s %7s %7s\n", "", "traditional", "orders: mean", "sd", "min", "max",
+                "p_hi", "p_lo", "p");
+    for (const gem::OrderStat &s : r.stats) {
+        const bool ratio = &s == &r.stats[2];
+        std::printf(ratio ? "%-4s %14.6f | %14.6f %12.6f %14.6f %14.6f | %7.4f %7.4f %7.4f%s\n"
+                          : "%-4s %14.0f | %14.1f %12.1f %14.0f %14.0f | %7.4f %7.4f %7.4f%s\n",
+                    s.name, s.observed, s.mean, s.sd, s.min, s.max, s.p_hi, s.p_lo, s.p,
+                    &s == &r.stats[0] ? "  <- PRIMARY, alpha 0.01" : "  (alpha 0.005)");
+    }
+    return 0;
+}
+
 // EXPLORATORY: how often the auditor says "rare" for a random A. Its p is
 // A's match share, so this is the fraction of types below alpha.
 int cmd_base(const gem::Corpus &corpus, unsigned threads)
@@ -266,6 +284,8 @@ int main(int argc, char **argv)
         if (cmd == "cluster")
             return cmd_cluster(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u,
                                argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 1000u, threads);
+        if (cmd == "order")
+            return cmd_order(corpus, argc > 3 ? static_cast<unsigned>(std::stoul(argv[3])) : 1000u);
         if (cmd == "claim" && argc >= 5)
             return cmd_claim(corpus, argv[3], argv[4], parse_methods(argc > 5 ? argv[5] : nullptr),
                              argc > 6 ? std::stoi(argv[6]) : 0);

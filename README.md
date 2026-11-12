@@ -30,6 +30,7 @@ build/gem-selftest out/wlc.gemc                    # 16 methods vs cited values
 build/gem-pairs-test                               # PREREG-003 pair counter vs brute force
 build/gem-stat out/wlc.gemc claim יין סוד          # claim auditor (add "all 1" for 16 methods, K=+/-1)
 build/gem-stat out/wlc.gemc r1 | r2 | r2b | cluster   # PREREG-001 / -002 / -003
+build/gem-stat out/wlc.gemc order                  # PREREG-005 letter-order test
 build/gem-stat out/wlc.gemc r2x | base             # exploratory diagnostics
 build/gem-els out/wlc.gemc rambsel | design | bench   # PREREG-004 parts A, B, kernel A/B
 scripts/manifest.sh data/morphhb/wlc out/wlc.gemc | diff - prereg/wlc.manifest   # L0 hashes
@@ -113,6 +114,7 @@ prints is not verified here). Runs: `results/exploratory-kab-*`,
 | K3 vectors | 39,912 x 32 floats, unit length within 9.9e-08, 5,108,736 bytes, payload and lexicon hashed (a file from other corpora is refused). The nearest words by cosine are spelling neighbours and share no value: cosine and value equality are different relations. |
 | K4 pair census | Among 796,427,143 pairs of types with different letter multisets, 103,310 agree in all four systems (1 in 7,709.1); four independent systems with the same single rates would give 0.706 pairs (arithmetic). Given agreement in hechrachi, gadol agrees in 52.4 %, katan in 44.3 %, siduri in 30.0 % of pairs (unconditional: 0.094 %, 4.39 %, 1.56 %). Census by grouping (20.5 ms) against brute force over 796,463,916 pairs (1.22 s): 0 of 33 counts differ. |
 | K5 dump | Attested yayin = sod agrees in hechrachi only (1 in 727.3 pairs agree that much; 85 types carry 70); Amalek = safek agrees in 3 of 4 systems (1 in 3,160.5). Inside Sefer Yetzirah: 524 pairs of different words agree in hechrachi (1 in 543.2), 70 of them in all four. The head of the all-four list is single-letter arithmetic (alef-bet = gimel, 1 + 2 = 3): for the letters 1-9 the four systems are one system. |
+| PREREG-005 letter order (frozen before its code; `results/prereg005-order.txt`) | Is the traditional letter order unusual in the four-system agreement it produces on the 39,615 WLC types? Against 1,000 random letter orders: T (pairs agreeing in all four) 102,005 vs 137,323.5 +/- 45,698.9 (60,177 to 456,130), p = 0.4416; T_H (hechrachi) 1,078,341 vs 1,286,791.8 +/- 296,374.8, p = 0.5255; T / T_H 0.0946 vs 0.1065, p = 0.6813. No signal. Gate met: both traditional counts equal the stage K census of the same lexicon. The expectation stated in the preregistration (above the median) was wrong in direction: 22.1 % of random orders give as few or fewer pairs. |
 | Kernels against their plain forms (5 interleaved rounds, ratio of the fastest rounds) | One packed add per letter 1.19x; SWAR agreement mask 1.08x; CSR counting sort 9.63x against `unordered_map<int, vector<string>>`; AVX2+FMA cosine scan 7.39x. Results identical in every pair; the ratios of medians moved between runs (1.09x to 1.44x for the packed add), the replacement was never the slower one. |
 
 Out of scope by design: no decoding of persons, events or dates, and no

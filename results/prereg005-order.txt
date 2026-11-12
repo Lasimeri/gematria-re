@@ -1,0 +1,6 @@
+frozen: corpus 46ce61ff38c6 ok, PREREG-001 f09c7ad765ef ok, PREREG-002 1cac4867eca5 ok, PREREG-003 048f905c13c3 ok, PREREG-004 0589ea9d5f1a ok, PREREG-005 823d7cf1a454 ok -> VERIFIED
+PREREG-005 four-system agreement under the traditional and 1000 random letter orders (39615 types, 2.7 s)
+        traditional |   orders: mean           sd            min            max |    p_hi    p_lo       p
+T            102005 |       137323.5      45698.9          60177         456130 |  0.7802  0.2208  0.4416  <- PRIMARY, alpha 0.01
+T_H         1078341 |      1286791.8     296374.8         738686        2832373 |  0.7383  0.2627  0.5255  (alpha 0.005)
+C          0.094594 |       0.106509     0.023308       0.055772       0.211049 |  0.6603  0.3407  0.6813  (alpha 0.005)

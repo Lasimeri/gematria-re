@@ -162,6 +162,22 @@ struct ClusterCell {
 };
 std::vector<ClusterCell> run_cluster(const gem_corpus &c, unsigned tables, unsigned reps, unsigned threads);
 
+// PREREG-005: pairs of types (different letter multisets) agreeing in all
+// four systems of stage K (T), in hechrachi (T_H), and T / T_H (C), under the
+// traditional letter order and under random letter orders.
+struct OrderStat {
+    const char *name = "";
+    double observed = 0, mean = 0, sd = 0, min = 0, max = 0;
+    double p_hi = 0, p_lo = 0, p = 0;  // p = min(1, 2 min(p_hi, p_lo))
+};
+struct OrderResult {
+    uint32_t types = 0;
+    unsigned orders = 0;
+    std::array<OrderStat, 3> stats;  // T, T_H, C
+    double seconds = 0;
+};
+OrderResult run_order(const gem_corpus &c, unsigned orders);
+
 // EXPLORATORY (not preregistered): strict coverage of any variant, to locate
 // the cause of a mismatch with the source; never a replacement result.
 struct VariantCoverage {
