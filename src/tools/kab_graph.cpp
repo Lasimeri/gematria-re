@@ -15,6 +15,7 @@
 
 #include <bit>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 
 namespace kabtool {
@@ -79,6 +80,31 @@ void print_dependence(const PairCensus &census)
                 commas(observed).c_str(), independent, static_cast<double>(observed) / independent);
 }
 
+// Agreement as information: a pair agreeing in a set of systems with share q
+// of all pairs carries -log2(q) bits. Each system alone, then the chain
+// hechrachi -> + gadol -> + katan -> + siduri with the bits each step adds.
+void print_bits(const PairCensus &census)
+{
+    double others = static_cast<double>(others_at_least(census, 0));
+    auto bits = [&](unsigned mask) { return -std::log2(static_cast<double>(others_at_least(census, mask)) / others); };
+    double alone = 0;
+    std::printf("  alone:");
+    for (unsigned s = 0; s < kSystems; s++) {
+        std::printf("  %s %.2f", kSystemName[s], bits(1u << s));
+        alone += bits(1u << s);
+    }
+    std::printf("  (sum %.2f bits if independent)\n  chain:", alone);
+    unsigned mask = 0;
+    double before = 0;
+    for (unsigned s = 0; s < kSystems; s++) {
+        mask |= 1u << s;
+        std::printf("  %s%s %.2f", s ? "+ " : "", kSystemName[s], bits(mask) - before);
+        before = bits(mask);
+    }
+    std::printf("  (total %.2f bits: the three systems after hechrachi add %.2f, not %.2f)\n", before,
+                before - bits(1u << kHechrachi), alone - bits(1u << kHechrachi));
+}
+
 }  // namespace
 
 int cmd_graph(const Corpus &c, Args)
@@ -102,6 +128,8 @@ int cmd_graph(const Corpus &c, Args)
     print_census(census);
     std::printf("dependence between the systems (pairs with different letter multisets):\n");
     print_dependence(census);
+    std::printf("information in an agreement, bits = -log2(share of pairs):\n");
+    print_bits(census);
     return 0;
 }
 

@@ -95,6 +95,23 @@ constexpr unsigned lane(uint64_t key, System s)
     return static_cast<unsigned>(key >> (kLaneBits * s) & 0xFFFFu);
 }
 
+// The independent coordinates behind the four lanes of a key (the identities
+// are proved per letter by detail::systems_are_dependent below):
+//   decade_sum    = (siduri - katan) / 9: the word's letters counted 0 for a
+//                   units letter, 1 for a tens letter, 2 for a hundreds letter
+//   final_surplus = gadol - hechrachi: what the final forms add
+// Two words agree in all four systems iff they agree in hechrachi, katan,
+// decade_sum and final_surplus.
+constexpr unsigned decade_sum(uint64_t key)
+{
+    return (lane(key, kSiduri) - lane(key, kKatan)) / 9u;
+}
+
+constexpr unsigned final_surplus(uint64_t key)
+{
+    return lane(key, kGadol) - lane(key, kHechrachi);
+}
+
 // Letter counts of a word, finals folded: letters 0..10 in lo, 11..21 in hi.
 struct Multiset {
     uint64_t lo = 0, hi = 0;

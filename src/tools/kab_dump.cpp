@@ -18,6 +18,13 @@
 // "novel", and each attested pair is audited on stdout whether or not it
 // reaches a file. A match is a candidate for reading, never a finding: its
 // price (how many pairs agree that much) is printed beside it.
+//
+// Every pair also gets a kind, and both files list the kind "mixed" first:
+//   single-letter  one of the two words is a single letter
+//   units-only     both words use only the letters alef..tet (decade_sum 0),
+//                  for which the four systems are one system: such a pair
+//                  agrees in all four as soon as it agrees in one
+//   mixed          everything else
 #include "kab_cmd.hpp"
 
 #include "gem/kab/graph.hpp"
@@ -37,12 +44,36 @@ using namespace gem::kab;
 
 namespace {
 
+enum Kind : unsigned { kMixed, kUnitsOnly, kSingleLetter, kKinds };
+constexpr std::array<const char *, kKinds> kKindName{"mixed", "units-only", "single-letter"};
+
 struct Row {
     Match m;
     unsigned mask, shared, in_reference;  // in_reference: how many of the two words the reference holds
+    Kind kind;
     uint32_t tuple_types;                 // types carrying word a's four values
     float cosine;
 };
+
+// The order both files share after their own leading criterion: least alike
+// first, then by type ids.
+bool by_cosine_then_ids(const Row &p, const Row &q)
+{
+    if (p.cosine != q.cosine)
+        return p.cosine < q.cosine;
+    return p.m.a != q.m.a ? p.m.a < q.m.a : p.m.b < q.m.b;
+}
+
+std::string kind_counts(const std::vector<Row> &rows)
+{
+    std::array<size_t, kKinds> n{};
+    for (const Row &r : rows)
+        n[r.kind]++;
+    std::string out;
+    for (unsigned k = 0; k < kKinds; k++)
+        out += (k ? ", " : "") + std::string(kKindName[k]) + " " + commas(n[k]);
+    return out;
+}
 
 // Letters the two words have in common, counted with multiplicity.
 unsigned shared_letters(const Multiset &a, const Multiset &b)
@@ -103,6 +134,9 @@ struct Context {
         r.mask = agree_swar(c.key(m.a), c.key(m.b));
         r.shared = shared_letters(c.multiset(m.a), c.multiset(m.b));
         r.in_reference = ((c.in_corpora(m.a) & reference_bit) != 0) + ((c.in_corpora(m.b) & reference_bit) != 0);
+        r.kind = c.letters(m.a) == 1 || c.letters(m.b) == 1                  ? kSingleLetter
+                 : decade_sum(c.key(m.a)) == 0 && decade_sum(c.key(m.b)) == 0 ? kUnitsOnly
+                                                                              : kMixed;
         r.tuple_types = static_cast<uint32_t>(tuples.at(c.key(m.a)).size());
         r.cosine = dot_plain(vectors.row(m.a), vectors.row(m.b));
         return r;
@@ -126,19 +160,23 @@ void write_rows(const Context &x, const std::vector<Row> &rows, const std::strin
                     "at least HGKS 1 in %.1f\n",
                  commas(x.others_at_least(0)).c_str(), x.one_in(1u << kHechrachi), x.one_in(kAllSystems));
     std::fprintf(f, "rank\tagree\tbase_rate_1_in\thechrachi_a\thechrachi_b\tgadol_a\tgadol_b\tkatan_a\tkatan_b\t"
-                    "siduri_a\tsiduri_b\ttypes_same_hechrachi_as_a\ttypes_same_4_values_as_a\ttokens_a\ttokens_b\t"
-                    "corpora_a\tcorpora_b\tshared_letters\tcosine\tstatus\tword_a\tword_b\n");
+                    "siduri_a\tsiduri_b\tdecade_sum_a\tdecade_sum_b\ttypes_same_hechrachi_as_a\t"
+                    "types_same_4_values_as_a\ttokens_a\ttokens_b\tcorpora_a\tcorpora_b\tshared_letters\tcosine\t"
+                    "kind\tstatus\tword_a\tword_b\n");
     size_t rank = 0;
     for (const Row &r : rows) {
         uint32_t a = r.m.a, b = r.m.b;
-        std::fprintf(f, "%zu\t%s\t%.1f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%zu\t%u\t%u\t%u\t%s\t%s\t%u\t%.4f\t%s\t%s\t%s\n",
+        std::fprintf(f,
+                     "%zu\t%s\t%.1f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%u\t%u\t%zu\t%u\t%u\t%u\t%s\t%s\t%u\t%.4f\t%s\t%s\t"
+                     "%s\t%s\n",
                      ++rank, mask_name(r.mask).c_str(), x.one_in(r.mask), x.c.value(a, kHechrachi),
                      x.c.value(b, kHechrachi), x.c.value(a, kGadol), x.c.value(b, kGadol), x.c.value(a, kKatan),
-                     x.c.value(b, kKatan), x.c.value(a, kSiduri), x.c.value(b, kSiduri),
+                     x.c.value(b, kKatan), x.c.value(a, kSiduri), x.c.value(b, kSiduri), decade_sum(x.c.key(a)),
+                     decade_sum(x.c.key(b)),
                      x.graph.bucket(kHechrachi, static_cast<unsigned>(x.c.value(a, kHechrachi))).size(),
                      r.tuple_types, x.c.tokens(a), x.c.tokens(b), corpora_of(x.c, a).c_str(),
-                     corpora_of(x.c, b).c_str(), r.shared, static_cast<double>(r.cosine), x.status(r),
-                     x.c.text(a).c_str(), x.c.text(b).c_str());
+                     corpora_of(x.c, b).c_str(), r.shared, static_cast<double>(r.cosine), kKindName[r.kind],
+                     x.status(r), x.c.text(a).c_str(), x.c.text(b).c_str());
     }
     if (std::fclose(f) != 0)
         throw std::runtime_error("cannot write " + path);
@@ -146,15 +184,15 @@ void write_rows(const Context &x, const std::vector<Row> &rows, const std::strin
 
 void print_top(const Context &x, const std::vector<Row> &rows, size_t top)
 {
-    std::printf("  %-5s %9s %6s %5s %6s %7s %6s %-8s %-8s %-8s %s\n", "agree", "hechrachi", "gadol", "katan", "siduri",
-                "cosine", "shared", "status", "corpora", "", "words");
+    std::printf("  %-5s %9s %6s %5s %6s %7s %6s %-13s %-8s %-8s %-8s %s\n", "agree", "hechrachi", "gadol", "katan",
+                "siduri", "cosine", "shared", "kind", "status", "corpora", "", "words");
     for (size_t i = 0; i < rows.size() && i < top; i++) {
         const Row &r = rows[i];
-        std::printf("  %-5s %9d %6d %5d %6d %7.4f %6u %-8s %-8s %-8s %s  %s\n", mask_name(r.mask).c_str(),
+        std::printf("  %-5s %9d %6d %5d %6d %7.4f %6u %-13s %-8s %-8s %-8s %s  %s\n", mask_name(r.mask).c_str(),
                     x.c.value(r.m.a, kHechrachi), x.c.value(r.m.a, kGadol), x.c.value(r.m.a, kKatan),
-                    x.c.value(r.m.a, kSiduri), static_cast<double>(r.cosine), r.shared, x.status(r),
-                    corpora_of(x.c, r.m.a).c_str(), corpora_of(x.c, r.m.b).c_str(), x.c.text(r.m.a).c_str(),
-                    x.c.text(r.m.b).c_str());
+                    x.c.value(r.m.a, kSiduri), static_cast<double>(r.cosine), r.shared, kKindName[r.kind],
+                    x.status(r), corpora_of(x.c, r.m.a).c_str(), corpora_of(x.c, r.m.b).c_str(),
+                    x.c.text(r.m.a).c_str(), x.c.text(r.m.b).c_str());
     }
 }
 
@@ -203,12 +241,10 @@ int cmd_dump(const Corpus &c, Args args)
     for (Match m : matches(c, 1u << kHechrachi, x.reference_bit))
         inside.push_back(x.row(m));
     std::sort(inside.begin(), inside.end(), [](const Row &p, const Row &q) {
+        if (p.kind != q.kind)
+            return p.kind < q.kind;
         int pp = std::popcount(p.mask), qp = std::popcount(q.mask);
-        if (pp != qp)
-            return pp > qp;
-        if (p.cosine != q.cosine)
-            return p.cosine < q.cosine;
-        return p.m.a != q.m.a ? p.m.a < q.m.a : p.m.b < q.m.b;
+        return pp != qp ? pp > qp : by_cosine_then_ids(p, q);
     });
     std::string inside_path = dir + "/matches-reference.tsv";
     write_rows(x, inside, inside_path,
@@ -222,19 +258,18 @@ int cmd_dump(const Corpus &c, Args args)
                 inside_path.c_str(), commas(inside.size()).c_str(), name.c_str(), commas(reference_pairs).c_str(),
                 inside.empty() ? 0.0 : static_cast<double>(reference_pairs) / static_cast<double>(inside.size()),
                 x.one_in(1u << kHechrachi), by_systems[4], by_systems[3], by_systems[2], by_systems[1]);
+    std::printf("  kinds: %s\n", kind_counts(inside).c_str());
     print_top(x, inside, 12);
 
     std::vector<Row> all4;
     for (Match m : matches(c, kAllSystems, 0))
         all4.push_back(x.row(m));
     std::sort(all4.begin(), all4.end(), [](const Row &p, const Row &q) {
+        if (p.kind != q.kind)
+            return p.kind < q.kind;
         if (p.in_reference != q.in_reference)
             return p.in_reference > q.in_reference;
-        if (p.tuple_types != q.tuple_types)
-            return p.tuple_types < q.tuple_types;
-        if (p.cosine != q.cosine)
-            return p.cosine < q.cosine;
-        return p.m.a != q.m.a ? p.m.a < q.m.a : p.m.b < q.m.b;
+        return p.tuple_types != q.tuple_types ? p.tuple_types < q.tuple_types : by_cosine_then_ids(p, q);
     });
     std::string all4_path = dir + "/matches-all4.tsv";
     write_rows(x, all4, all4_path, "pairs from all corpora with different letter multisets agreeing in all four systems");
@@ -244,6 +279,7 @@ int cmd_dump(const Corpus &c, Args args)
     std::printf("%s: %s pairs (census: %s); both words in %s %zu, one word %zu, neither %zu\n", all4_path.c_str(),
                 commas(all4.size()).c_str(), commas(x.others_at_least(kAllSystems)).c_str(), name.c_str(),
                 touching[2], touching[1], touching[0]);
+    std::printf("  kinds: %s\n", kind_counts(all4).c_str());
     print_top(x, all4, 12);
     return all4.size() == x.others_at_least(kAllSystems) ? 0 : 1;
 }
